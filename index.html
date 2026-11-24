@@ -143,6 +143,9 @@ textarea{width:100%;min-height:110px;border:1px solid var(--line);border-radius:
 .swipe .btn{padding:15px;font-size:16px}
 .btn.no{background:color-mix(in srgb,var(--warn) 14%,var(--paper));border-color:color-mix(in srgb,var(--warn) 55%,transparent)}
 .btn.yes{background:color-mix(in srgb,var(--good) 16%,var(--paper));border-color:color-mix(in srgb,var(--good) 55%,transparent)}
+.undo{justify-self:center;color:var(--muted)}
+.lock{color:var(--muted)}
+.btn.yes:disabled{filter:grayscale(1)}
 .toast{font-family:var(--f-mono);color:var(--warn);font-weight:700}
 .small{font-size:13px;color:var(--muted)}
 
@@ -547,17 +550,18 @@ function home(){
 /* ---------- Kártyák ---------- */
 function cards(sel){
   stopTimer();setKeys(null);
-  let ids=shuffle(poolOf(sel)),p=0,know=0,dont=[];
+  let ids=shuffle(poolOf(sel)),p=0,know=0,dont=[],hist=[];
   const draw=()=>{
     if(p>=ids.length)return done();
     const i=ids[p];
     app.innerHTML=`<div class="study">${topbar("Kártyák · "+selLabel(sel),`${p+1}/${ids.length}`)}${progress(p/ids.length)}
       ${scene(i,qFront(i,false),qBack(i))}
-      <div class="dock"><div class="swipe"><button class="btn no" id="n">← Még nem megy</button><button class="btn yes" id="y">Megy →</button></div>
+      <div class="dock"><div class="swipe"><button class="btn no" id="n">← Még nem megy</button><button class="btn yes" id="y">Megy →</button></div>${hist.length?`<button class="btn ghost sm undo" id="undo">↶ Mégse: az előző kártyát ${hist[hist.length-1].ok?"„Megy”":"„Még nem”"}-nek jelölted</button>`:""}
       <p class="small" style="text-align:center;margin:0">Koppints a kártyára vagy nyomj szóközt. Húzd jobbra/balra, vagy nyilak.</p></div></div>`;
     bindQuit();
     const c=mountCard({swipe:{right:()=>ans(true),left:()=>ans(false)}});
-    const ans=ok=>{if(ok){know++;S.fc[i]=1;S.xp+=5}else{S.fc[i]=0;dont.push(i)}touchDay();save();hud();p++;draw()};
+    const ans=ok=>{hist.push({i,ok,fc:S.fc[i],xp:S.xp});if(ok){know++;S.fc[i]=1;S.xp+=5}else{S.fc[i]=0;dont.push(i)}touchDay();save();hud();p++;draw()};
+    if(hist.length)$("#undo").onclick=()=>{const h=hist.pop();if(h.fc===undefined)delete S.fc[h.i];else S.fc[h.i]=h.fc;S.xp=h.xp;if(h.ok)know--;else dont.pop();p--;save();hud();draw()};
     $("#y").onclick=()=>c.fly(true);$("#n").onclick=()=>c.fly(false);
     setKeys(e=>{if(typing(e))return;if(e.key===" "&&e.target.id!=="fc"){e.preventDefault();c.flip()}else if(e.key==="ArrowRight")c.fly(true);else if(e.key==="ArrowLeft")c.fly(false)});
   };
@@ -615,18 +619,29 @@ function learn(sel){
       app.querySelectorAll(".opt").forEach(b=>b.onclick=()=>pick(+b.dataset.o));
       setKeys(e=>{const n=+e.key;if(!typing(e)&&n>=1&&n<=opts.length){e.preventDefault();pick(n-1)}});
     }else{
-      let shown=false;
-      $("#mid").innerHTML=`<textarea id="ans" placeholder="Ide leírhatod, amire emlékszel (nem kötelező)"></textarea>`;
+      let shown=false,full=false,msg="";
+      $("#mid").innerHTML=`<textarea id="ans" placeholder="Írd le fejből, amire emlékszel. A „Fejből ment” csak hibátlan válasznál nyomható meg."></textarea>`;
       $("#act").innerHTML=`<button class="btn go" id="sh">Megfordítom</button><span class="small">vagy koppints a kártyára</span>`;
-      const rate=ok=>{setKeys(null);advance(ok,ok?4:2);$("#vd").innerHTML=ok?`<span class="verdict ok">MEGTANULVA ★</span>`:`<span class="verdict bad">MÉG GYAKOROLD</span>`;cont()};
-      const c=mountCard({onTap:()=>shown?c.flip():show(),swipe:{enabled:()=>shown&&!$("#nx"),right:()=>{resetScene();rate(true)},left:()=>{resetScene();rate(false)}}});
       const resetScene=()=>{const sc=$("#scene");sc.classList.remove("fly");sc.style.transform="";sc.style.setProperty("--yes",0);sc.style.setProperty("--no",0)};
+      const c=mountCard({onTap:()=>shown?c.flip():show(),swipe:{enabled:()=>shown&&!$("#nx"),right:()=>{resetScene();if(full)rate(true);else c.shake()},left:()=>{resetScene();rate(false)}}});
+      const rateUI=()=>{$("#vd").innerHTML="";
+        $("#act").innerHTML=`<div class="swipe" style="width:100%"><button class="btn no" id="n">← Még nem ment</button><button class="btn yes" id="y"${full?"":" disabled"}>Fejből ment →</button></div>${full?"":`<p class="small lock" style="margin:0;width:100%">🔒 ${msg}</p>`}`;
+        $("#y").onclick=()=>{if(full)rate(true)};$("#n").onclick=()=>rate(false);
+        setKeys(e=>{if(typing(e))return;if(e.key==="ArrowRight"&&full)rate(true);else if(e.key==="ArrowLeft")rate(false)})};
+      const rate=ok=>{if(ok&&!full)return;setKeys(null);
+        const snap={L:S.L[i],xp:S.xp,badges:S.badges.slice(),queue:queue.slice(),step,right,total};
+        advance(ok,ok?4:2);
+        $("#vd").innerHTML=ok?`<span class="verdict ok">MEGTANULVA ★</span>`:`<span class="verdict bad">MÉG GYAKOROLD</span>`;
+        $("#act").innerHTML=`<button class="btn go" id="nx">Tovább <span class="kbd">↵</span></button><button class="btn ghost" id="undo">↶ Mégse, véletlen volt</button>`;
+        $("#nx").focus({preventScroll:true});$("#nx").onclick=next;
+        $("#undo").onclick=()=>{if(snap.L===undefined)delete S.L[i];else S.L[i]=snap.L;S.xp=snap.xp;S.badges=snap.badges;queue=snap.queue;step=snap.step;right=snap.right;total=snap.total;save();hud();rateUI()};
+        setKeys(e=>{if(e.key==="Enter"&&!typing(e)&&e.target.tagName!=="BUTTON"){e.preventDefault();next()}})};
       const show=()=>{if(shown)return;shown=true;const t=$("#ans").value;$("#ans").readOnly=true;
-        if(t.trim()){const h=autoHits(i,t);app.querySelectorAll(".back .alist li").forEach((li,j)=>{if(h[j])li.innerHTML=`<span class="hit">✓ ${esc(pts[j])}</span>`})}
-        c.flip(true);
-        $("#act").innerHTML=`<div class="swipe" style="width:100%"><button class="btn no" id="n">← Még nem ment</button><button class="btn yes" id="y">Fejből ment →</button></div>`;
-        $("#y").onclick=()=>rate(true);$("#n").onclick=()=>rate(false);
-        setKeys(e=>{if(typing(e))return;if(e.key==="ArrowRight")rate(true);else if(e.key==="ArrowLeft")rate(false)})};
+        const h=t.trim()?autoHits(i,t):pts.map(()=>false),n=h.filter(Boolean).length;
+        app.querySelectorAll(".back .alist li").forEach((li,j)=>{if(h[j])li.innerHTML=`<span class="hit">✓ ${esc(pts[j])}</span>`});
+        full=n>=q[2];
+        msg=!t.trim()?"Nem írtál le semmit, ezért nem jelölheted, hogy fejből ment. Legközelebb írd le a választ.":`A hibátlan válaszhoz ${q[2]} elem kell, a leírt válaszodban ${n} van meg (zölddel pipálva). Ezt még gyakorolni kell.`;
+        c.flip(true);rateUI()};
       $("#sh").onclick=show;$("#ans").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();show()}});
     }
     scrollTo(0,0);
@@ -723,20 +738,21 @@ function zhResult(ids,res,isMinta,ms){
 /* ---------- Villámkör ---------- */
 function flash(){
   stopTimer();setKeys(null);
-  const ids=shuffle(Q.map((_,i)=>i));let p=0,ok=0,combo=0,best=0,left=90,over=false;
+  const ids=shuffle(Q.map((_,i)=>i));let p=0,ok=0,combo=0,best=0,left=90,over=false,hist=[];
   const draw=()=>{
     if(over)return;
     const i=ids[p%ids.length];
     app.innerHTML=`<div class="study">${topbar(`Villámkör · ${ok} tudtam · combo ×${combo}`,left+" mp")}${progress(left/90)}
       ${scene(i,qFront(i,false),qBack(i),{yes:"TUDTAM",no:"NEM"})}
-      <div class="dock"><div class="swipe"><button class="btn no" id="n">← Nem tudtam</button><button class="btn yes" id="y">Tudtam →</button></div>
+      <div class="dock"><div class="swipe"><button class="btn no" id="n">← Nem tudtam</button><button class="btn yes" id="y">Tudtam →</button></div>${hist.length?`<button class="btn ghost sm undo" id="undo">↶ Mégse: az előzőt ${hist[hist.length-1].y?"„Tudtam”":"„Nem tudtam”"}-nak jelölted</button>`:""}
       <p class="small" style="text-align:center;margin:0">Fordítsd meg, légy őszinte. Tudtam = +15 XP × combo.</p></div></div>`;
     bindQuit();
     const c=mountCard({swipe:{right:()=>ans(true),left:()=>ans(false)}});
     $("#y").onclick=()=>c.fly(true);$("#n").onclick=()=>c.fly(false);
+    if(hist.length)$("#undo").onclick=()=>{const h=hist.pop();ok=h.ok;combo=h.combo;best=h.best;S.xp=h.xp;p--;save();hud();draw()};
     setKeys(e=>{if(typing(e))return;if(e.key===" "&&e.target.id!=="fc"){e.preventDefault();c.flip()}else if(e.key==="ArrowRight")c.fly(true);else if(e.key==="ArrowLeft")c.fly(false)});
   };
-  const ans=y=>{if(over)return;if(y){ok++;combo++;best=Math.max(best,combo);S.xp+=Math.round(15*(1+0.2*Math.min(combo,5)));touchDay();save();hud();if(combo%3===0)fx(20)}else combo=0;p++;draw()};
+  const ans=y=>{if(over)return;hist.push({y,ok,combo,best,xp:S.xp});if(y){ok++;combo++;best=Math.max(best,combo);S.xp+=Math.round(15*(1+0.2*Math.min(combo,5)));touchDay();save();hud();if(combo%3===0)fx(20)}else combo=0;p++;draw()};
   draw();
   timerId=setInterval(()=>{left--;const el=$("#timer");if(!el)return stopTimer();el.textContent=left+" mp";el.classList.toggle("hot",left<=10);const pr=app.querySelector(".prog i");if(pr)pr.style.width=left/90*100+"%";
     if(left<=0){stopTimer();over=true;setKeys(null);
