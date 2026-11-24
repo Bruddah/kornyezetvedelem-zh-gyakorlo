@@ -134,6 +134,45 @@ textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:
 .restable td{padding:8px 6px;border-top:1px solid var(--line);vertical-align:top}
 .restable td:last-child{text-align:right;font-family:var(--f-mono);white-space:nowrap}
 .tw{overflow-x:auto}
+/* learn / flashcards */
+.learnbox{background:var(--paper);border:2px solid var(--accent);border-radius:16px;padding:16px;margin-bottom:20px}
+.learnbox h2{font-size:22px}
+.learnbox p{margin:6px 0 12px;color:var(--muted);font-size:14px}
+.learnbox select{font:inherit;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);max-width:100%}
+.lstats{display:flex;gap:6px;height:12px;border-radius:99px;overflow:hidden;background:var(--chip);margin-top:12px}
+.lstats i{display:block;height:100%}
+.lstats .k{background:var(--good)}.lstats .w{background:var(--sun)}
+.llegend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.llegend b{font-family:var(--f-mono);color:var(--ink)}
+.fc-scene{perspective:1400px;margin-bottom:12px}
+.fc{position:relative;width:100%;min-height:300px;transition:transform .45s cubic-bezier(.3,.7,.3,1);transform-style:preserve-3d;cursor:pointer;border:0;padding:0;background:none;color:var(--ink);text-align:left;display:block}
+.fc.flip{transform:rotateY(180deg)}
+.fc .side{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:22px;display:flex;flex-direction:column;box-shadow:0 10px 30px -20px rgba(0,0,0,.4);overflow:auto}
+.fc .back{transform:rotateY(180deg)}
+.fc .front .q{margin:auto 0;text-align:center}
+.fc .hint{font-size:12px;color:var(--muted);text-align:center;margin-top:auto;padding-top:10px}
+.fc .back ol{margin:6px 0 0;padding-left:22px;display:grid;gap:6px;font-size:16px}
+.fc .back .need{margin:10px 0 0}
+.fc-tag{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.fc-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fc-btns .btn{padding:14px;font-size:16px}
+.btn.no{border-color:var(--sun);color:var(--ink);background:color-mix(in srgb,var(--sun) 14%,var(--paper))}
+.btn.yes{border-color:var(--good);color:var(--ink);background:color-mix(in srgb,var(--good) 16%,var(--paper))}
+.kbd{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.opts{display:grid;gap:8px;margin-top:14px}
+.opt{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:12px 14px;text-align:left;font-size:15px;display:flex;gap:10px;align-items:flex-start}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt .n{font-family:var(--f-mono);color:var(--muted);font-size:12px;margin-top:2px}
+.opt.right{background:color-mix(in srgb,var(--good) 20%,var(--paper));border-color:var(--good)}
+.opt.wrong{background:color-mix(in srgb,var(--bad) 16%,var(--paper));border-color:var(--bad)}
+.opt:disabled{cursor:default}
+.anslist{margin:10px 0 0;padding-left:22px;display:grid;gap:5px}
+.anslist .gap{background:var(--hi);border-radius:6px;padding:0 6px;font-weight:700}
+.stage{display:inline-flex;gap:4px;align-items:center}
+.stage i{width:22px;height:6px;border-radius:9px;background:var(--chip)}
+.stage i.on{background:var(--accent)}
+.fb{margin-top:12px;font-weight:600}
+.fb.ok{color:var(--good)}.fb.bad{color:var(--bad)}
 canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:20;width:100%;height:100%}
 .foot{margin-top:30px;font-size:12px;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -315,7 +354,7 @@ function commit(i,sc,mult=true){
 
 /* ---------- Views ---------- */
 function home(){
-  stopTimer();
+  stopTimer();setKeys(null);
   const ms=ZH_DATE-new Date();const days=Math.max(0,Math.floor(ms/864e5)),hrs=Math.max(0,Math.floor(ms%864e5/36e5));
   const p=predicted();const g=grade(p);
   app.innerHTML=`
@@ -324,6 +363,7 @@ function home(){
     <p>Bedő Anett 11 előadásának mind a ${Q.length} ellenőrző kérdése. Írd le a választ, a gép kulcsszavak alapján kiosztja a pontot (0–4), te pedig javíthatsz rajta.</p></div>
     <div class="count"><small>ZH · nov. 26. 12:10, A2</small><div class="big num">${ms>0?days+"n "+hrs+"ó":"ma!"}</div><small>van hátra</small></div>
   </section>
+  ${learnBox()}
   <section class="meter" aria-label="Becsült ZH-eredmény">
     <div class="top"><h3>Ötös-mérő: most kb. <span class="num">${p.toFixed(1)}</span> / 36 pont → ${GNAME[g]} (${g})</h3><small class="num">jeleshez 31 pont kell</small></div>
     <div class="scale"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><i class="pin" style="left:calc(${Math.min(100,p/36*100)}% - 1px)"></i></div>
@@ -331,7 +371,7 @@ function home(){
     <p>A becslés minden kérdés utolsó pontszámából számol: 9 kérdés × 4 pont, ahogy a minta ZH-ban. A még nem gyakorolt kérdés 0 pontnak számít.</p>
   </section>
   <div class="modes">
-    <button class="mode primary" id="mPractice"><b>Gyakorlás</b><span>A leggyengébb kérdések jönnek előre</span></button>
+    <button class="mode" id="mPractice"><b>Gyakorlás írással</b><span>Leírod, pontot kapsz; a leggyengébbek jönnek előre</span></button>
     <button class="mode" id="mZh"><b>ZH-próba</b><span>9 véletlen kérdés, 36 pont, jegy a végén</span></button>
     <button class="mode" id="mMinta"><b>Minta ZH</b><span>A tanárnő mintájának 9 kérdése</span></button>
     <button class="mode" id="mFlash"><b>Villámkör</b><span>90 mp, tudtam / nem tudtam, combo</span></button>
@@ -342,12 +382,13 @@ function home(){
   <div class="sect"><h2>Kitűzők</h2><small>${S.badges.length}/${BADGES.length}</small></div>
   <div class="badges">${BADGES.map(b=>`<span class="bdg ${S.badges.includes(b[0])?"on":""}">${esc(b[1])}</span>`).join("")}</div>
   <p class="foot">A haladás ebben a böngészőben mentődik. A „dia ↗” linkek a szelearningre visznek, ahhoz be kell lenned jelentkezve. <button class="btn ghost" id="reset" style="padding:2px 8px;font-size:12px">Haladás törlése</button><span id="resetc"></span></p>`;
+  bindLearnBox();
   $("#mPractice").onclick=()=>practice(null);
   $("#mZh").onclick=()=>zh(false);
   $("#mMinta").onclick=()=>zh(true);
   $("#mFlash").onclick=flash;
   app.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>practice(+b.dataset.t));
-  $("#reset").onclick=()=>{$("#resetc").innerHTML=' Biztos? <button class="btn ghost" id="reset2" style="padding:2px 8px;font-size:12px;color:var(--bad)">Igen, törlöm</button>';$("#reset2").onclick=()=>{S={xp:0,combo:0,m:{},badges:[],days:[],bestFlash:0};save();hud();home()}};
+  $("#reset").onclick=()=>{$("#resetc").innerHTML=' Biztos? <button class="btn ghost" id="reset2" style="padding:2px 8px;font-size:12px;color:var(--bad)">Igen, törlöm</button>';$("#reset2").onclick=()=>{S={xp:0,combo:0,m:{},badges:[],days:[],bestFlash:0,L:{},fc:{}};save();hud();home()}};
   hud();window.scrollTo(0,0);
 }
 
@@ -441,6 +482,142 @@ function flash(){
     if(ok>=12)award("villam");S.bestFlash=Math.max(S.bestFlash||0,ok);save();
     app.innerHTML=`<section class="card res"><div class="cardhead"><span>Villámkör vége</span><span>rekord: <b class="num">${S.bestFlash}</b></span></div><h2 class="num">${ok} tudtam / ${p} kérdés</h2><p style="color:var(--muted)">Leghosszabb combo: ×${best}. Ami nem ment, azt a Gyakorlás módban pontosan is kipróbálhatod.</p><div class="row"><button class="btn go" id="again">Még egy kör</button><span class="spacer"></span><button class="btn ghost" id="back">Főoldal</button></div></section>`;
     $("#again").onclick=flash;$("#back").onclick=home;if(ok>=10)fx(80)}},1000);
+}
+
+/* ---------- Tanulás nulláról: kártyák + Quizlet-szerű tanuló mód ---------- */
+S.L=S.L||{};S.fc=S.fc||{};
+const STG=["Ismerkedés","Melyik tartozik ide?","Hiányzó elem","Felidézés"];
+function poolOf(sel){const ids=Q.map((_,i)=>i);if(sel==="all")return ids;if(sel==="minta")return MINTA.slice();return ids.filter(i=>Q[i][0]===+sel)}
+function selLabel(sel){return sel==="all"?"minden téma":sel==="minta"?"Minta ZH kérdései":TOPICS[+sel].n}
+function lStage(i){return S.L[i]||0}
+function learnStats(ids){let k=0,w=0;ids.forEach(i=>{const s=lStage(i);if(s>=4)k++;else if(s>0)w++});return{k,w,n:ids.length-k-w,t:ids.length}}
+function topicOpts(cur){return `<option value="all"${cur==="all"?" selected":""}>Minden téma (${Q.length} kérdés)</option><option value="minta"${cur==="minta"?" selected":""}>Csak a minta ZH 9 kérdése</option>${TOPICS.map((t,k)=>`<option value="${k}"${String(cur)===String(k)?" selected":""}>${k+1}. ${esc(t.n)}</option>`).join("")}`}
+function learnBox(){
+  const sel=S.lsel||"all",st=learnStats(poolOf(sel));
+  return `<section class="learnbox" aria-label="Tanulás nulláról">
+    <h2>Tanulás nulláról</h2>
+    <p>Ha még semmit nem tudsz, itt kezdd. A <b>Tanulás</b> lépésenként vezet végig minden kérdésen: először megmutatja a választ, aztán feleletválasztós kérdéseket kapsz, a végén fejből felidézed. A <b>Kártyák</b> klasszikus forgatós szókártyák.</p>
+    <div class="row" style="margin-top:0"><select id="lsel" aria-label="Témakör">${topicOpts(sel)}</select></div>
+    <div class="row"><button class="btn go" id="mLearn">Tanulás indítása</button><button class="btn" id="mCards">Kártyák</button></div>
+    <div class="lstats" title="Tanulási állapot"><i class="k" style="width:${st.k/st.t*100}%"></i><i class="w" style="width:${st.w/st.t*100}%"></i></div>
+    <div class="llegend"><span>Megtanulva <b>${st.k}</b></span><span>Tanulás alatt <b>${st.w}</b></span><span>Még nem láttad <b>${st.n}</b></span></div>
+  </section>`;
+}
+function bindLearnBox(){
+  $("#lsel").onchange=e=>{S.lsel=e.target.value;save();home()};
+  $("#mLearn").onclick=()=>learn(S.lsel||"all");
+  $("#mCards").onclick=()=>cards(S.lsel||"all",false);
+}
+let keyH=null;function setKeys(f){if(keyH)document.removeEventListener("keydown",keyH);keyH=f;if(f)document.addEventListener("keydown",f)}
+
+/* Kártyák */
+function cards(sel,onlyUnknown){
+  stopTimer();
+  let ids=shuffle(poolOf(sel));if(onlyUnknown)ids=ids.filter(i=>!S.fc[i]);
+  if(!ids.length){ids=shuffle(poolOf(sel));onlyUnknown=false}
+  let p=0,know=0,dont=[];
+  const draw=()=>{
+    if(p>=ids.length)return done();
+    const i=ids[p],q=Q[i];
+    app.innerHTML=`<div class="top-actions"><button class="btn ghost" id="quit">← Főoldal</button><span class="timer num">${p+1} / ${ids.length}</span></div>
+    <div class="prog2"><i style="width:${p/ids.length*100}%"></i></div>
+    <div class="fc-scene"><button class="fc" id="fc" aria-label="Kártya megfordítása">
+      <div class="side front"><div class="fc-tag">${esc(TOPICS[q[0]].n)}${q[3]?" · minta ZH":""}</div><div class="q">${esc(q[1])}</div><div class="hint">Gondold végig, aztán koppints a kártyára (vagy szóköz)</div></div>
+      <div class="side back"><div class="fc-tag">Válasz · ${q[2]} elem kell a 4 ponthoz</div><ol>${q[4].map(x=>`<li>${esc(x[0])}</li>`).join("")}</ol>${q[5]?`<p class="note">${esc(q[5])}</p>`:""}</div>
+    </button></div>
+    <div class="fc-btns"><button class="btn no" id="n">Még nem megy <span class="kbd">←</span></button><button class="btn yes" id="y">Megy <span class="kbd">→</span></button></div>
+    <p class="note">${esc(selLabel(sel))}${onlyUnknown?" · csak a még nem menők":""}. Ami nem megy, a kör végén újra előjön.</p>`;
+    const fc=$("#fc");fc.onclick=()=>fc.classList.toggle("flip");
+    const ans=ok=>{if(ok){know++;S.fc[i]=1;S.xp+=5}else{S.fc[i]=0;dont.push(i)}if(!S.days.includes(today()))S.days.push(today());save();hud();p++;draw()};
+    $("#y").onclick=()=>ans(true);$("#n").onclick=()=>ans(false);$("#quit").onclick=()=>{setKeys(null);home()};
+    setKeys(e=>{if(e.target.tagName==="SELECT")return;if(e.key===" "){e.preventDefault();fc.classList.toggle("flip")}else if(e.key==="ArrowRight")ans(true);else if(e.key==="ArrowLeft")ans(false)});
+  };
+  const done=()=>{setKeys(null);if(know===ids.length)fx(80);
+    app.innerHTML=`<section class="card res"><div class="cardhead"><span>Kártyák · kör vége</span><span>${esc(selLabel(sel))}</span></div>
+    <h2 class="num">${know} megy · ${dont.length} még nem</h2>
+    <p style="color:var(--muted)">${dont.length?"A még nem menőket most újra átnézheted. Addig ismételd, amíg mind megy.":"Mind megy! Most jöhet a Gyakorlás, ahol le is írod a választ."}</p>
+    <div class="row">${dont.length?`<button class="btn go" id="again">A ${dont.length} nem menőt újra</button>`:`<button class="btn go" id="prac">Gyakorlás írással</button>`}<button class="btn" id="all">Az összeset újra</button><span class="spacer"></span><button class="btn ghost" id="back">Főoldal</button></div></section>`;
+    if(dont.length)$("#again").onclick=()=>{ids=shuffle(dont);dont=[];know=0;p=0;draw()};else $("#prac").onclick=()=>practice(sel==="all"||sel==="minta"?null:+sel);
+    $("#all").onclick=()=>cards(sel,false);$("#back").onclick=home;window.scrollTo(0,0)};
+  draw();
+}
+
+/* Tanulás: minden kérdés 4 lépcsőn megy át: 0 megnézed, 1 feleletválasztó, 2 hiányzó elem, 3 felidézés → 4 megtanulva */
+function distractors(i,n,exclude){
+  const mine=new Set(Q[i][4].map(p=>p[0]));const same=[],other=[];
+  Q.forEach((q,j)=>{if(j===i)return;q[4].forEach(p=>{if(mine.has(p[0])||exclude.includes(p[0]))return;(q[0]===Q[i][0]?same:other).push(p[0])})});
+  const s=shuffle(same),o=shuffle(other);return [...s.slice(0,Math.min(2,s.length)),...o].slice(0,n);
+}
+function learn(sel){
+  stopTimer();setKeys(null);
+  const all=poolOf(sel);
+  const todo=all.filter(i=>lStage(i)<4).sort((a,b)=>lStage(b)-lStage(a)||a-b);
+  if(!todo.length)return learnDone(sel,true);
+  const round=todo.slice(0,7);let queue=shuffle(round),step=0,right=0,total=0;
+  const roundLen=round.length;
+  const next=()=>{
+    if(!queue.length)return roundEnd();
+    const i=queue.shift(),q=Q[i],s=lStage(i);
+    const head=`<div class="top-actions"><button class="btn ghost" id="quit">← Főoldal</button><span class="timer">Tanulás · ${esc(selLabel(sel))}</span></div>
+      <div class="prog2"><i style="width:${Math.min(1,step/(roundLen*1.6))*100}%"></i></div>
+      <section class="card"><div class="cardhead"><span>${STG[s]}</span><span class="stage" title="lépcső">${[0,1,2,3].map(k=>`<i class="${k<s?"on":""}"></i>`).join("")}</span></div>
+      <div class="q">${esc(q[1])}</div>`;
+    const tail=`<div id="fb"></div><div class="row" id="act"></div></section>`;
+    const bindQuit=()=>{$("#quit").onclick=()=>{setKeys(null);home()}};
+    const advance=(ok,ns)=>{S.L[i]=ns;total++;if(ok){right++;S.xp+=ns>=4?20:8}if(!S.days.includes(today()))S.days.push(today());save();hud();step++;
+      if(ns<4)queue.splice(Math.min(queue.length,2+Math.random()*3|0),0,i); else fx(25)};
+    const cont=(label="Tovább")=>{$("#act").innerHTML=`<button class="btn go" id="nx">${label} <span class="kbd">↵</span></button>`;$("#nx").focus({preventScroll:true});$("#nx").onclick=()=>{setKeys(null);next()};setKeys(e=>{if(e.key==="Enter"){e.preventDefault();setKeys(null);next()}})};
+    if(s===0){
+      app.innerHTML=head+`<div class="need">Olvasd el figyelmesen. Ennyit kell tudni rá (a 4 ponthoz ${q[2]} elem kell):</div><ol class="anslist">${q[4].map(x=>`<li>${esc(x[0])}</li>`).join("")}</ol>${q[5]?`<p class="note">${esc(q[5])}</p>`:""}`+tail;bindQuit();
+      $("#act").innerHTML=`<button class="btn go" id="ok">Megnéztem <span class="kbd">↵</span></button>`;$("#ok").focus({preventScroll:true});
+      const go=()=>{advance(true,1);setKeys(null);next()};$("#ok").onclick=go;setKeys(e=>{if(e.key==="Enter"){e.preventDefault();go()}});
+    }else if(s===1||s===2){
+      const pts=q[4].map(p=>p[0]);const k=Math.random()*pts.length|0,correct=pts[k];
+      const opts=shuffle([correct,...distractors(i,3,pts)]);
+      const body=s===1?`<div class="need">Melyik tartozik a válaszhoz?</div>`
+        :`<div class="need">Egy elem hiányzik a listából. Melyik az?</div><ol class="anslist">${pts.map((x,j)=>`<li>${j===k?'<span class="gap">???</span>':esc(x)}</li>`).join("")}</ol>`;
+      app.innerHTML=head+body+`<div class="opts">${opts.map((o,j)=>`<button class="opt" data-o="${j}"><span class="n">${j+1}</span><span>${esc(o)}</span></button>`).join("")}</div>`+tail;bindQuit();
+      const pick=j=>{const ok=opts[j]===correct;app.querySelectorAll(".opt").forEach((b,x)=>{b.disabled=true;if(opts[x]===correct)b.classList.add("right");else if(x===j)b.classList.add("wrong")});
+        $("#fb").innerHTML=ok?`<p class="fb ok">Jó! ${s===1?"Következő lépcső: hiányzó elem.":"Következő lépcső: felidézés fejből."}</p>`
+          :`<p class="fb bad">Nem ez. A helyes zölddel jelölve. A teljes válasz:</p><ol class="anslist">${pts.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`;
+        advance(ok,ok?s+1:Math.max(1,s-1));cont()};
+      app.querySelectorAll(".opt").forEach(b=>b.onclick=()=>pick(+b.dataset.o));
+      setKeys(e=>{const n=+e.key;if(n>=1&&n<=opts.length&&!app.querySelector(".opt").disabled){e.preventDefault();pick(n-1)}});
+    }else{
+      app.innerHTML=head+`<div class="need">Próbáld fejből felidézni (${q[2]} elem kell). Ha akarod, írd le, aztán nézd meg.</div><textarea id="ans" placeholder="ide írhatod, de nem kötelező"></textarea><div id="rv"></div>`+tail;bindQuit();
+      $("#act").innerHTML=`<button class="btn go" id="sh">Válasz megmutatása</button>`;
+      const show=()=>{const t=$("#ans").value;const hits=t.trim()?autoHits(i,t):q[4].map(()=>false);$("#ans").readOnly=true;
+        $("#rv").innerHTML=`<ul class="pts">${q[4].map((p,j)=>`<li><label class="${hits[j]?"hit":""}" style="cursor:default"><span>${hits[j]?"✓ ":""}${esc(p[0])}</span></label></li>`).join("")}</ul>`;
+        $("#act").innerHTML=`<div class="fc-btns" style="width:100%"><button class="btn no" id="n">Még nem ment <span class="kbd">←</span></button><button class="btn yes" id="y">Fejből ment <span class="kbd">→</span></button></div>`;
+        const r=ok=>{setKeys(null);advance(ok,ok?4:2);$("#fb").innerHTML=ok?`<p class="fb ok">Megtanulva! ★</p>`:`<p class="fb bad">Semmi baj, visszamegy a hiányzó elemes lépcsőre.</p>`;cont()};
+        $("#y").onclick=()=>r(true);$("#n").onclick=()=>r(false);
+        setKeys(e=>{if(e.target.tagName==="TEXTAREA")return;if(e.key==="ArrowRight")r(true);else if(e.key==="ArrowLeft")r(false)})};
+      $("#sh").onclick=show;$("#ans").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();show()}});
+    }
+    window.scrollTo(0,0);
+  };
+  const roundEnd=()=>{setKeys(null);
+    const st=learnStats(all);const fin=round.filter(i=>lStage(i)>=4).length;
+    if(st.k===st.t)return learnDone(sel,false);
+    fx(30);
+    app.innerHTML=`<section class="card res"><div class="cardhead"><span>Kör vége</span><span>${esc(selLabel(sel))}</span></div>
+      <h2 class="num">${right} / ${total} jó lépés</h2>
+      <p style="color:var(--muted)">Ebben a körben ${fin} kérdést tanultál meg teljesen. Összesen: ${st.k}/${st.t} megtanulva.</p>
+      <div class="lstats"><i class="k" style="width:${st.k/st.t*100}%"></i><i class="w" style="width:${st.w/st.t*100}%"></i></div>
+      <div class="llegend"><span>Megtanulva <b>${st.k}</b></span><span>Tanulás alatt <b>${st.w}</b></span><span>Még nem láttad <b>${st.n}</b></span></div>
+      <div class="row"><button class="btn go" id="cont">Következő kör <span class="kbd">↵</span></button><span class="spacer"></span><button class="btn ghost" id="back">Főoldal</button></div></section>`;
+    $("#cont").onclick=()=>learn(sel);$("#back").onclick=home;$("#cont").focus({preventScroll:true});
+    setKeys(e=>{if(e.key==="Enter"){e.preventDefault();learn(sel)}});window.scrollTo(0,0)};
+  next();
+}
+function learnDone(sel,already){
+  setKeys(null);if(!already)fx(150);
+  app.innerHTML=`<section class="card res"><div class="cardhead"><span>Tanulás</span><span>${esc(selLabel(sel))}</span></div>
+    <h2>${already?"Ezt a részt már mind megtanultad.":"Mind megtanulva!"}</h2>
+    <p style="color:var(--muted)">Most jön az éles próba: a Gyakorlásban leírod a választ és pontot kapsz rá, a ZH-próbában pedig időre megy.</p>
+    <div class="row"><button class="btn go" id="prac">Gyakorlás írással</button><button class="btn" id="zhp">ZH-próba</button><button class="btn ghost" id="reset">Tanulás újrakezdése</button><span class="spacer"></span><button class="btn ghost" id="back">Főoldal</button></div></section>`;
+  $("#prac").onclick=()=>practice(sel==="all"||sel==="minta"?null:+sel);$("#zhp").onclick=()=>zh(false);$("#back").onclick=home;
+  $("#reset").onclick=()=>{poolOf(sel).forEach(i=>delete S.L[i]);save();learn(sel)};window.scrollTo(0,0);
 }
 
 /* ---------- Confetti ---------- */
