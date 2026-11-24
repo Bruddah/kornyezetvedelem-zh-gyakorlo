@@ -1,0 +1,458 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Környezetvédelem ZH-gyakorló</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one centered column like a field notebook; a sticky scoreboard strip on top, then home / card / results views. */
+:root{
+  --bg:#eef3ef; --paper:#fbfdfb; --ink:#14261f; --muted:#5b6f66; --line:#cfdcd4;
+  --accent:#0f7a5c; --accent-ink:#ffffff; --sky:#2a6fb0; --sun:#d98a10; --bad:#c2412d; --good:#1f8a4c;
+  --chip:#e2ece6; --hi:#fff3cf;
+  --f-display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-body:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1714; --paper:#14211c; --ink:#e3efe8; --muted:#93a89e; --line:#27392f;
+  --accent:#3fc496; --accent-ink:#06130e; --sky:#6aa8e0; --sun:#f0b04a; --bad:#ef7b66; --good:#5fd08f;
+  --chip:#1d2e27; --hi:#3a3216; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1714; --paper:#14211c; --ink:#e3efe8; --muted:#93a89e; --line:#27392f;
+  --accent:#3fc496; --accent-ink:#06130e; --sky:#6aa8e0; --sun:#f0b04a; --bad:#ef7b66; --good:#5fd08f;
+  --chip:#1d2e27; --hi:#3a3216; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:760px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+button{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,textarea:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* scoreboard */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.bar .wrap{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.lvl{display:flex;align-items:center;gap:10px;flex:1 1 220px;min-width:0}
+.lvl .badge{font-family:var(--f-display);font-weight:800;background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:4px 10px;white-space:nowrap}
+.xpbar{flex:1;height:10px;background:var(--chip);border-radius:99px;overflow:hidden;min-width:60px}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--sun));width:0;transition:width .5s}
+.stat{display:flex;gap:6px;align-items:baseline;font-size:13px;color:var(--muted)}
+.stat b{color:var(--ink);font-family:var(--f-mono);font-size:15px}
+.combo b{color:var(--sun)}
+
+/* home */
+.hero{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:end;margin-bottom:20px}
+.hero h1{font-size:clamp(30px,6vw,46px);font-weight:800;line-height:1.02}
+.hero p{margin:8px 0 0;color:var(--muted);max-width:52ch}
+.count{text-align:right}
+.count .big{font-family:var(--f-mono);font-size:30px;font-weight:700;line-height:1}
+.count small{display:block;color:var(--muted);font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+@media (max-width:560px){.hero{grid-template-columns:1fr}.count{text-align:left}}
+
+.meter{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:20px}
+.meter .top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline}
+.meter h3{font-size:17px}
+.scale{display:grid;grid-template-columns:18fr 4fr 4fr 5fr 6fr;margin-top:12px;height:30px;border-radius:8px;overflow:hidden;position:relative;font-size:11px;font-family:var(--f-mono)}
+.scale span{display:flex;align-items:center;justify-content:center;color:var(--ink);border-right:1px solid var(--paper)}
+.scale span:nth-child(1){background:color-mix(in srgb,var(--bad) 22%,var(--paper))}
+.scale span:nth-child(2){background:color-mix(in srgb,var(--sun) 18%,var(--paper))}
+.scale span:nth-child(3){background:color-mix(in srgb,var(--sun) 30%,var(--paper))}
+.scale span:nth-child(4){background:color-mix(in srgb,var(--good) 22%,var(--paper))}
+.scale span:nth-child(5){background:color-mix(in srgb,var(--good) 42%,var(--paper));font-weight:700}
+.pin{position:absolute;top:-4px;bottom:-4px;width:3px;background:var(--ink);border-radius:2px;transition:left .6s;left:0}
+.scalelbl{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-family:var(--f-mono);margin-top:4px}
+.meter p{margin:10px 0 0;color:var(--muted);font-size:13px}
+
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px;margin-bottom:26px}
+.mode{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:4px;transition:transform .15s,border-color .15s}
+.mode:hover{transform:translateY(-2px);border-color:var(--accent)}
+.mode b{font-family:var(--f-display);font-size:18px}
+.mode span{font-size:13px;color:var(--muted)}
+.mode.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.mode.primary span{color:inherit;opacity:.85}
+
+.sect{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 10px;gap:10px;flex-wrap:wrap}
+.sect h2{font-size:20px}
+.sect small{color:var(--muted)}
+.topics{display:grid;gap:8px;margin-bottom:26px}
+.topic{display:grid;grid-template-columns:30px 1fr auto;gap:12px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px;text-align:left;color:var(--ink)}
+.topic:hover{border-color:var(--accent)}
+.topic .no{font-family:var(--f-mono);color:var(--muted);font-size:13px}
+.topic .nm{min-width:0}
+.topic .nm b{display:block;font-weight:600}
+.topic .prog{height:6px;background:var(--chip);border-radius:9px;overflow:hidden;margin-top:6px}
+.topic .prog i{display:block;height:100%;background:var(--accent);width:0}
+.topic .st{font-family:var(--f-mono);font-size:12px;color:var(--muted);text-align:right;white-space:nowrap}
+.topic a{font-size:12px;color:var(--sky)}
+
+.badges{display:flex;flex-wrap:wrap;gap:8px}
+.bdg{font-size:12px;padding:6px 10px;border-radius:99px;border:1px dashed var(--line);color:var(--muted)}
+.bdg.on{border-style:solid;border-color:var(--sun);color:var(--ink);background:color-mix(in srgb,var(--sun) 14%,var(--paper))}
+
+/* card */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 8px 24px -18px rgba(0,0,0,.35)}
+.cardhead{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px;letter-spacing:.03em;text-transform:uppercase}
+.stars{letter-spacing:2px;color:var(--sun)}
+.q{font-family:var(--f-display);font-size:clamp(21px,3.6vw,27px);font-weight:700;line-height:1.2;margin-bottom:6px}
+.need{font-size:13px;color:var(--muted);margin-bottom:14px}
+textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);padding:12px;font:inherit;resize:vertical}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:10px 16px;border-radius:10px;font-weight:600}
+.btn.go{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.5;cursor:default}
+.spacer{flex:1}
+.pts{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:6px}
+.pts li label{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:var(--bg)}
+.pts li label.hit{background:var(--hi);border-color:var(--sun)}
+.pts input{margin-top:4px;accent-color:var(--accent);width:16px;height:16px;flex:none}
+.note{font-size:13px;color:var(--muted);margin-top:10px;border-left:3px solid var(--line);padding-left:10px}
+.score{display:flex;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap}
+.score .s{font-family:var(--f-mono);font-size:34px;font-weight:700;line-height:1}
+.score .s small{font-size:16px;color:var(--muted)}
+.dots{display:flex;gap:5px}
+.dots i{width:14px;height:14px;border-radius:4px;background:var(--chip)}
+.dots i.on{background:var(--accent)}
+.toast{font-family:var(--f-mono);color:var(--sun);font-weight:700}
+.prog2{height:5px;background:var(--chip);border-radius:9px;overflow:hidden;margin-bottom:14px}
+.prog2 i{display:block;height:100%;background:var(--sky);width:0;transition:width .3s}
+.top-actions{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap}
+.timer{font-family:var(--f-mono);font-size:14px;color:var(--muted)}
+.timer.hot{color:var(--bad);font-weight:700}
+
+/* lightning */
+.flash-ans{margin-top:14px;padding:12px;border-radius:12px;background:var(--bg);border:1px solid var(--line);font-size:14px}
+.flash-ans ul{margin:0;padding-left:18px}
+
+/* results */
+.res h2{font-size:clamp(26px,5vw,38px)}
+.grade{font-family:var(--f-display);font-weight:800;font-size:72px;line-height:1;color:var(--accent)}
+.restable{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
+.restable td{padding:8px 6px;border-top:1px solid var(--line);vertical-align:top}
+.restable td:last-child{text-align:right;font-family:var(--f-mono);white-space:nowrap}
+.tw{overflow-x:auto}
+canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:20;width:100%;height:100%}
+.foot{margin-top:30px;font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="bar"><div class="wrap">
+  <div class="lvl"><span class="badge" id="lvlName">Csíra</span><div class="xpbar" title="XP a következő szintig"><i id="xpFill"></i></div></div>
+  <div class="stat">XP <b id="xp">0</b></div>
+  <div class="stat combo">combo <b id="combo">×0</b></div>
+  <div class="stat">napi sorozat <b id="streak">0</b></div>
+</div></div>
+
+<main class="wrap" id="app"></main>
+
+<script>
+/* ---------- Data: Bedő Anett előadásainak végén lévő Ellenőrző kérdések ---------- */
+const TOPICS=[
+ {n:"Bevezetés, környezeti elemek, Bioszféra II.",u:680637},
+ {n:"Ökológiai lábnyom",u:680638},
+ {n:"Környezetvédelem története",u:680639},
+ {n:"Globális környezeti és népesedési problémák",u:680640},
+ {n:"Levegővédelem 1. – légkör, szennyezők",u:680641},
+ {n:"Levegővédelem 2. – üvegház, savas eső, szmog, ózon",u:680642},
+ {n:"Vízvédelem 1. – körforgás, vízkészletek",u:680643},
+ {n:"Vízvédelem 2. – szennyezés, szennyvíztisztítás",u:680644},
+ {n:"Talajvédelem",u:680645},
+ {n:"Hulladékgazdálkodás 1.",u:680646},
+ {n:"Hulladékgazdálkodás 2.",u:680647}
+];
+const IMG="A dián ez kép volt, a szövegből nem lehetett kiolvasni: ez tankönyvi válasz, vesd össze a diával.";
+// [topicIndex, kérdés, hány elem kell a 4 ponthoz, mintaZH?, [[pont, kulcsszó-regex ékezet nélkül]], megjegyzés]
+const Q=[
+[0,"Sorolja fel a bioszféra részeit!",4,0,[["Litoszféra (földkéreg, kőzetburok)","litoszf|foldker|kozetbur"],["Hidroszféra (vízburok)","hidroszf|vizbur"],["Atmoszféra (légkör)","atmoszf|legkor"],["Az élőlények által benépesített területek (élővilág)","elolen|elovilag|benepes"]]],
+[0,"Sorolja fel a környezeti elemeket!",4,0,[["Föld (talaj, kőzet, ásványvagyon, domborzat)","fold|talaj|kozet"],["Víz (felszíni és felszín alatti)","\\bviz"],["Levegő (alsó és felső légkör)","levego|legkor"],["Élővilág (ember, növény, állat, mikroorganizmusok)","elovilag|noveny|allat|elolen"],["Épített környezet (települések, infrastruktúra)","epitett|telepul|infrastr"],["Táj (természetes táj, kultúrtáj)","\\btaj"]]],
+[0,"Sorolja fel a környezetvédelem feladatait!",4,0,[["A károkat megelőző védelem","megelo"],["Az okozott károk megszüntetése","megszun|helyreall"],["A környezet fejlesztése, a környezetminőség javítása","fejleszt|javit"],["Ésszerű gazdálkodás a természeti erőforrásokkal","eroforras|gazdalk"]]],
+[0,"Soroljon fel a környezetvédelem alapelvei közül öt (a minta ZH-ban négy) példát!",4,1,[["Egzakt megismerés elve (monitoring)","egzakt|megismer|monitor"],["Az élet tiszteletének és védelmének elve","tisztelet"],["Károk megelőzésének és megszüntetésének elve","megelozes|karok"],["Visszaforgatás (recycling) elve","visszaforg|recycl|ujrahaszn"],["Takarékosság elve","takarek"],["Elővigyázatosság elve","elovigyaz"],["Alkalmazkodás elve","alkalmazkod"],["Harmonikus (fenntartható) fejlődés elve","fenntarthato|harmonikus"],["Tervszerűség elve","tervszer"],["Állami felelősség, egyéni és társadalmi részvétel, (nemzetközi) együttműködés","allami|reszvetel|egyuttmuk"],["Életminőség javítása, távlati gondolkodás, információk szabad áramlása, környezeti nevelés","eletminoseg|tavlati|informaci|neveles|oktatas"]],"A minta ZH ezt négy példával kérdezte (4 pont)."],
+[0,"Sorolja fel a kimerülő erőforrásokat!",4,0,[["Kőszén","koszen|\\bszen"],["Kőolaj","koolaj|olaj"],["Földgáz","foldgaz"],["Fémércek (vas, réz, alumínium, arany…)","erc|fem|vas|rez|arany"],["Nem fémes ásványi nyersanyagok (pl. só, foszfát, építőanyag)","asvany|nyersanyag|foszfat"],["Urán (nukleáris üzemanyag)","uran"]],IMG],
+[0,"Sorolja fel a megújuló erőforrásokat!",4,0,[["Napenergia","\\bnap"],["Szélenergia","szel"],["Vízenergia (+ árapály)","viz|arapaly"],["Geotermikus energia","geoterm"],["Biomassza","biomassz|fa\\b"],["Feltételesen megújuló: talaj, élővilág, víz, levegő","talaj|elovilag|feltetel"]],IMG],
+[0,"Írja le az emisszió fogalmát, mértékegységét, és egy példát!",3,0,[["Emisszió = kibocsátás (a szennyező forrásnál)","kibocsat"],["Mértékegység: mennyiség / idő, pl. g/s, m³/s","ido|g\\/s|m3\\/s|s\\b"],["Példa: a kémény által kibocsátott SO₂ mennyisége","kemeny|so2|kendioxid|ken-dioxid"]]],
+[0,"Írja le az immisszió fogalmát, mértékegységét, és egy példát!",3,0,[["Immisszió = szennyezettségi érték, terhelés a környezetben","szennyezettseg|terheles"],["Mértékegység: mennyiség / térfogat = koncentráció, pl. g/m³","koncentr|terfogat|g\\/m3"],["Példa: a légkör SO₂-koncentrációja","legkor|so2|levego"]]],
+[0,"Lokalizálhatóság szerint milyen környezetszennyező forrásokat különböztetünk meg? Írjon példát is!",4,0,[["Pontszerű forrás (helye pontosan meghatározható)","pontszer"],["Példa pontszerűre: gyárkémény, szennyvízkibocsátó cső","kemeny|cso|gyar|eromu"],["Diffúz forrás (eredete konkrétan nem határozható meg)","diffuz"],["Példa diffúzra: mezőgazdasági műtrágya-bemosódás, közlekedés","mezogazd|mutragy|kozleked|lefolyas"]]],
+[0,"Írja le mi volt a Bioszféra II. kísérlet lényege!",4,0,[["A földi bioszféra mesterséges, kicsinyített mása: zárt ökológiai rendszer (Arizona)","zart|mesterseg|arizon|kicsiny"],["1991–1993, 8 ember (4 férfi, 4 nő) élt benne","1991|1993|8 ember|negy ferfi|4 ferfi"],["7 biom (óceán, sivatag, szavanna, esőerdő, mocsár, agrár, emberi élőhely), ~3800 faj","biom|oceán|oceán|sivatag|szavann|esoerd|3800"],["Cél: megérteni a Föld működését; lehet-e önfenntartó rendszert építeni más bolygón","bolygo|mukod|onfenntart"],["Önellátás: élelmük 80%-át maguk termelték, víz és szemét újrahasznosítva","80|onellat|ujrahaszn"]]],
+[0,"Milyen problémák léptek fel a Bioszféra II. kísérlet során?",4,0,[["Talajbaktériumok gyorsan bontották a szerves anyagot: CO₂ nőtt, O₂ csökkent","co2|oxigen|szen-dioxid|szendioxid|bakter"],["Csökkent a napsugárzás (felhős idő)","napsugar|felhos"],["A méhek és más rovarok kihaltak, kártevők (csótány, hangya) elszaporodtak","meh|rovar|csotany|hangya|karteo|kartev"],["25 gerinces fajból 19 eltűnt","gerinces|19"],["Kúszónövények, gyomok agresszíven terjedtek","gyom|kuszonov"],["Nem tudtak elég élelmet termelni","elelem|elelm"]]],
+[0,"Írja le milyen következtetések vonhatók le a Bioszféra II. kísérletből!",3,0,[["Mai tudásunkkal lehetetlen olyan zárt rendszert alkotni, ami eltart embereket","lehetetlen|nem lehet|zart rendszer"],["A földi ökoszisztéma túl összetett, darabjait nem lehet kiragadni","osszetett|bonyolult|kiragad"],["Az okokra nem találtak megnyugtató választ","nem sikerult|valasz|ok"],["Az ember mint a gyerek: szétszedi a szerkezetet, de összerakni nem tudja","gyerek|szetszed|osszerak"],["Tudományosabb, jobban tervezett kísérlet más eredményt hozhatna; hatalmas anyagi bukás","tudomanyos|anyagi|bukas|200 millio"]]],
+[0,"Soroljon fel három környezetvédelmi törekvést és fejtse ki annak pozitív hatását!",3,0,[["Fülöp-szigetek: minden végzős 10 fát ültet → évi 175 millió fa, erdősítés","fulop|10 fa|faultet|fat ultet|175"],["London maraton: ehető algás vízgömbök műanyag palack helyett","alga|maraton|vizgomb"],["Thaiföld: banánlevél csomagolás → kevesebb műanyaghulladék","banan|level"],["Róma: PET-palackkal fizethető metrójegy → visszagyűjtés","roma|metro|pet"],["Kenya: napelemes sótalanító → 35 000 ember ivóvize","kenya|sotalan|napelem"],["Skócia: úszó szélerőmű → 20 000 otthon zöld árama","skoc|uszo|szelero"]]],
+
+[1,"Írja le az ökológiai lábnyom fogalmát! Mennyi a Föld ökológiai lábnyoma?",3,0,[["Az a (biológiailag produktív) terület, amely károsodás nélkül megtermeli az életvitelünkhöz szükséges javakat","terulet"],["…és feldolgozza (elnyeli) a keletkező hulladékot, CO₂-t; mértékegysége a globális hektár (gha)","hulladek|gha|globalis hektar|elnyel"],["Föld átlaga ≈ 2,7–2,85 gha/fő, miközben a biokapacitás ≈ 2,1 gha/fő (≈35%-kal túlfogyasztunk)","2,85|2\\.85|2,7|2\\.7|2,1|35"]],"A diákon több szám szerepel: emberiség átlaga 2,7 gha/fő (2012), ill. 2,85 hektár; biokapacitás 2,1 ha/fő."],
+[1,"Milyen elemekből áll az ökológiai lábnyom? Részletezze őket!",5,0,[["Beépített területek lábnyoma (infrastruktúra, lakás, utak, gyárak)","beepit|infrastr"],["Termőföld (szántó) lábnyom: élelmiszer, takarmány, bioüzemanyag","termofold|szanto|gabona|elelmiszer"],["Halászati lábnyom (tengeri és édesvízi fajok)","halasz|\\bhal|tenger"],["Erdőlábnyom (fa, papír, tűzifa)","erdo|\\bfa|papir"],["Legelőlábnyom (hús, tej, tojás, gyapjú)","legelo|hus"],["Karbonlábnyom (a CO₂ megkötéséhez szükséges erdőterület)","karbon|szen|co2"],["+ Vízlábnyom (közvetlen és közvetett vízfelhasználás)","vizlab"]]],
+[1,"Írja le mi történik, ha egy ország túllépi az ökológiai lehetőségeit!",4,0,[["Ökológiai deficit / adósság alakul ki, nő a fogyasztás („kiadás”)","deficit|adossag|hiany"],["Zsugorodó erdők, biodiverzitás és halhozamok csökkenése, fajpusztulás","erdo|biodiverz|hal|fajpusztul"],["Élelmiszerhiány, csökkenő mezőgazdasági termelékenység","elelmiszer|termelekeny"],["CO₂ felhalmozódik a légkörben és óceánban → globális felmelegedés, klímaváltozás","co2|felmeleg|klima"],["Vízhiány, talajerózió, elsivatagosodás, talajvízszint-csökkenés, legelők kimerülése","vizhiany|erozi|elsivatag|talajviz|legelo"]]],
+[1,"Mit jelent az ökológiai túllövés fogalma?",3,0,[["Az emberiség több erőforrást fogyaszt, mint amit a Föld adott évben fenntarthatóan előállít","tobb|tulfogyaszt|tobbet"],["Már nem csak a természeti tőke hozamát, hanem magát a tőkét éljük fel","toke|hozam"],["Túllövés napja: amikor kimerítjük az éves készletet (2026: július 30.)","napja|julius|augusztus"],["Hosszú távon nem fenntartható (pl. több CO₂-t bocsátunk ki, mint amit erdők, óceánok elnyelnek)","fenntarthat|elnyel"]]],
+
+[2,"Írja le mi a vörös könyv!",2,0,[["1966, Red Data Book (IUCN)","1966|red data|iucn"],["A kipusztult vagy veszélyeztetett növény- és állatfajok jegyzéke","kipusztult|veszelyeztet"]]],
+[2,"Írja le miért alakult meg a Római klub, kik voltak a tagjai!",3,0,[["1968-ban alakult","1968"],["Tagjai: 10 ország 30 tudósa (ma 25 ország 70 tudósa), szigorúan zártkörű","tudos|10 orszag|30"],["Célja: az emberiséget fenyegető globális veszélyek feltárása a világ előtt","globalis|veszely|fenyeget"],["Globális nézőpont, holisztikus szemlélet, hosszú távú megoldások","holiszt|hosszu tav"]]],
+[2,"Írja le a Meadows-féle „A növekedés határai” modell lényegét!",4,0,[["1972, a Római Klub első jelentése; matematikai világmodell","1972|romai|matematikai|vilagmodell"],["5 változó: népesség, energia- és nyersanyagkészlet, szennyezés, ipari termelés, élelmiszertermelés","nepesseg|nyersanyag|szennyez|ipari|elelmiszer"],["Az 1900–1970-es trendeket 2100-ig extrapolálták","extrapol|2100|1900"],["Eredmény: ha az exponenciális növekedés folytatódik, a XXI. sz. közepén (~2050) összeomlás","osszeoml|2050|exponen"],["Megoldás: zéró növekedés modellje (születés = halálozás, ipari termelés megállítása)","zero|zéró|egyensuly|szuletes"]]],
+[2,"Ismertessen röviden egy, az órán bemutatott környezetvédelmi katasztrófát!",4,0,[["Megnevezés és helyszín (pl. Csernobil, Seveso, Bhopal, Exxon Valdez, Sandoz/Rajna)","csernobil|seveso|bhopal|exxon|valdez|sandoz|rajna"],["Évszám (1986 / 1976 / 1984 / 1989)","1986|1976|1984|1989"],["Ok: többnyire emberi mulasztás (pl. reaktorrobbanás, túlhevült reaktor, megfeneklett tanker)","mulaszt|robban|turhevul|megfenek|alkohol|hiba"],["Következmény: pl. radioaktív szennyezés 30 000 km², dioxinfelhő, 3000 halott, 50 millió liter olaj","radioakt|sugar|dioxin|halott|halal|olaj|metil"]],"Csernobil (1986.04.26.): 4-es reaktor robbant emberi mulasztás miatt, 3 napig eltitkolták, 3,7 millió embert érintett, ~30 000 km² ma is szennyezett."],
+[2,"Írja le a fenntartható fejlődés fogalmát!",3,1,[["Olyan fejlődés, amely kielégíti a jelen generáció szükségleteit…","jelen"],["…anélkül, hogy veszélyeztetné a jövő nemzedékek esélyét saját szükségleteik kielégítésére","jovo|nemzedek|generaci"],["Brundtland-bizottság, „Közös Jövőnk” jelentés (1987)","brundtland|kozos jovonk|1987"],["Lényege: a fogyasztás az ökológiai határokon belül maradjon, mindenki számára elérhető legyen","okologiai hatar|hataro|fogyasztas"]],"A minta ZH: „Fogalmazza meg mi a fenntartható fejlődés lényege!”"],
+
+[3,"Soroljon fel öt globális problémát (nem csak környezeti szempontból)!",5,0,[["Túlnépesedés","tulnepes|nepesseg"],["Éhínség, élelmiszerhiány","ehinseg|ehez|elelmiszer"],["Városnövekedés (urbanizáció)","varos|urbaniz"],["Elsivatagosodás","elsivatag"],["Energiaválság, nyersanyagok kimerülése","energia|nyersanyag"],["Globális felmelegedés, savas eső, ózonréteg elvékonyodása","felmeleg|savas|ozon"],["Víz-, talaj-, levegőszennyezés, hulladék","szennyez|hulladek"],["Nukleáris veszély","nuklear|atom"],["Biodiverzitás csökkenése","biodiverz|faj"],["Háborús konfliktusok, adósságválság","haboru|konflikt|adossag"]]],
+[3,"Ismertesse a globalizáció fogalmát és az ahhoz kapcsolódó tényezőket!",4,0,[["Giddens: a világot átfogó társadalmi kapcsolatok intenzitásának növekedése; távoli helyek úgy kapcsolódnak össze, hogy egymás eseményeit befolyásolják","kapcsolat|tavoli|befolyas|giddens"],["Közlekedés, szállítás felgyorsulása","kozleked|szallit"],["Tudomány és egészségügy fejlődése (→ népességnövekedés)","tudomany|egeszsegugy"],["Gazdasági globalizáció (multik, világkereskedelem, válságok)","gazdasag|multi|kereskedel"],["Információ, kommunikáció, internet","informaci|internet|kommunik"],["Környezeti, politikai és társadalmi globalizáció (határon átnyúló szennyezés)","kornyezeti|politikai|tarsadalmi|hataron"]]],
+[3,"Ismertesse, hogy milyen kapcsolat van a globális ökonómia és a globális ökológia között!",2,0,[["Megfordult a kapcsolat: régen a gazdasági fejlődés környezeti hatásai miatt aggódtunk, ma az ökológiai stressz gazdasági-társadalmi hatásai a gond","megfordult|okologiai stressz|stressz|regen"],["Régen az országok kereskedelmi függése volt meghatározó, ma a kölcsönös környezeti függőség","kolcsonos|fugg"]]],
+[3,"Milyen problémákat vet fel Földünk népesedésének növekedése?",4,1,[["Több ember → több fogyasztás → több termelés → több nyersanyag kitermelése","fogyaszt|termel|nyersanyag"],["Élelmiszerhiány, éhezés (a gyors növekedés ott van, ahol a gazdaság a leggyengébb)","elelmiszer|ehez|ehinseg"],["Vízkészletek apadása, vízhiány","viz"],["Termőterület csökkenése, urbanizáció","termoter|termofold|urbaniz|varos"],["Élőhelyek pusztulása, a természet visszaszorulása","elohely|pusztul|elovilag"],["Több energia és hulladék, nagyobb szennyezés","hulladek|energia|szennyez"]],"Minta ZH: négyet kell felsorolni."],
+[3,"Milyen problémákat vet fel a nagyvárosok népességnövekedése?",4,0,[["Az infrastruktúra (víz, csatorna, szolgáltatás) nem tart lépést (pl. Alexandria: 1 milliósra tervezett csatorna, 4 millió ember)","infrastr|csatorna|vezetekes|szolgaltat"],["Közlekedés, légszennyezés, füstköd (szmog)","kozleked|legszennyez|szmog|fustkod"],["Egyre több, kezelhetetlen hulladék","hulladek"],["Sajátos városi éghajlat (beépítettség, betontömeg)","eghajlat|beton|hoszig"],["Zaj, zsúfoltság, sivár környezet → lelki betegségek","zaj|zsufolt|lelki"],["Szennyezett vizek (pl. Bogotá folyó)","viz|bakter"]]],
+[3,"Ismertesse a népesség területi eloszlásának problémáit! Sorolja fel a fontosabb koncentrációs térségeket!",4,0,[["Földrajzilag rendkívül egyenlőtlen: túlzsúfolt és gyéren lakott térségek","egyenlotlen|zsufolt|gyeren"],["Urbanizáció: 2000 óta a népesség több mint fele városban él","urbaniz|varos"],["A növekedés ott a leggyorsabb, ahol a gazdaság ezt a legkevésbé teszi lehetővé","fejlodo|gazdasag|leggyorsabb"],["Koncentrációs térségek: Kelet-Ázsia (Kína), Dél-Ázsia (India, Banglades), Délkelet-Ázsia (Indonézia)","kina|india|azsia|banglad|indonez"],["…Európa, az USA északkeleti partvidéke, a Nílus-völgy","europa|usa|amerika|nilus"]],IMG],
+
+[4,"Írja le a légkör százalékos összetételét!",4,1,[["Nitrogén (N₂) ≈ 78%","nitrogen|n2|78"],["Oxigén (O₂) ≈ 21% (20,93%)","oxigen|o2|21|20,9"],["Argon (Ar) ≈ 0,93%","argon|\\bar\\b|0,9"],["Szén-dioxid (CO₂) ≈ 0,03–0,04%","co2|szen-dioxid|szendioxid|0,03|0,04"],["+ hidrogén és nemesgázok ≈ 0,01%; vendéganyag: vízgőz","hidrogen|nemesgaz|vizgoz"]]],
+[4,"Élet nélkül a Földön hogyan változna a légkör oxigén mennyisége?",2,0,[["Oxigén csak nyomokban lenne (ma 21%)","nyom"],["A légkör főleg CO₂ lenne (~98%), N₂ ~1,9%, mert az oxigént az élőlények fotoszintézise termeli","98|fotoszint|co2"]]],
+[4,"Sorolja fel a légkör vertikális szerkezetét és jellemezzen egyet!",5,0,[["Troposzféra (~11 km): időjárás, szennyeződések színtere, km-enként 6–6,5 °C-kal hűl","troposz"],["Sztratoszféra (~50 km-ig): ózonréteg, hőmérséklet −50 °C-ról 0 °C-ra emelkedik","sztratosz"],["Mezoszféra (~80 km): újra hűl −120 °C-ig, meteoritok","mezosz"],["Termoszféra (~500 km): rohamos melegedés >1200 °C, ritka levegő","termosz"],["Exoszféra (700–1500 km-től): átmegy a bolygóközi térbe","exosz"],["Egy réteg jellemzése (magasság + hőmérséklet + szerep)","km|°c|fok|idojaras|ozon"]]],
+[4,"Soroljon fel három éghajlatalakító tényezőt!",3,0,[["A Nap sugárzása és annak veszteségei","nap"],["Földrajzi szélesség","szelesseg"],["A földfelszín anyaga","felszin anyag|anyaga"],["Az óceánoktól és tengeráramlásoktól mért távolság","ocean|tenger"],["Tengerszint feletti magasság, domborzat, növényzet","magassag|domborzat|novenyzet"],["Hegyláncok légtömeg-eltérítő hatása; emberi tevékenység","hegy|emberi"]]],
+[4,"Ismertesse a VOC szennyezők főbb típusait, forrásait és hatásait!",5,1,[["VOC = illékony szerves vegyületek","illekony|szerves"],["Freonok (CFC, pl. CF₂Cl₂): hűtőgépek, habosítás, vegytisztítás → ózonréteget bontják","freon|cfc"],["PAH (policiklikus aromás szénhidrogének): kipufogógáz, >700 °C égetés → rákkeltő, fejfájás, nehézlégzés","pah|policikl|aromas"],["Dioxinok: hulladék- és tüzelőanyag-égetés → zsírszövetben halmozódnak, máj- és immunkárosodás, rák","dioxin"],["Forrás: ~70%-uk autók kipufogógázából","kipufog|auto|70"],["NOx-szal napfényben fotokémiai szmogot képeznek; egy részük rákkeltő","fotokem|szmog|rakkelt"]],"Minta ZH: „Ismertesse a VOC szennyezők főbb típusait!”"],
+
+[5,"Mi az üvegházhatás és hogyan kapcsolódik össze a globális felmelegedéssel?",4,0,[["A légkör hővisszatartó képessége","hovisszatart|visszatart"],["A Nap rövidhullámú sugárzása átjut, a Föld hosszúhullámú (infravörös) visszasugárzását az ÜHG-k elnyelik","infravor|hosszuhull|elnyel|visszasugar"],["Nélküle −18 °C lenne a +15 °C helyett (≈30 fokkal hidegebb)","18|15|30"],["Az ÜHG-koncentráció növekedése (fosszilis égetés, erdőirtás) fokozza → globális felmelegedés","fokoz|novek|felmeleg|fosszil|erdoirt"]]],
+[5,"Sorolja fel az üvegházhatású gázokat!",4,0,[["Szén-dioxid (CO₂)","co2|szen-dioxid|szendioxid"],["Metán (CH₄) – molekulánként 23× hatékonyabb","metan|ch4"],["Dinitrogén-oxid / nitrogén-oxidok (N₂O, NOx)","n2o|nox|nitrogen"],["Fluorozott gázok, freonok (CFC)","freon|cfc|fluor"],["Vízgőz","vizgoz|para"],["(Troposzférikus ózon)","ozon"]]],
+[5,"Foglalja össze a globális felmelegedés okozta problémákat!",4,0,[["Jégtakarók, gleccserek olvadása","jeg|gleccser|olvad"],["Tengerszint emelkedése (alacsony partvidékek, szigetországok veszélyben)","tengerszint|vizszint"],["A Golf-áramlás lassulása/leállása → Észak-Európa lehűlése","golf|aramlas"],["Szélsőséges időjárás: hurrikánok, árvizek, felhőszakadások","szelsoseg|hurrikan|arviz|orkan|vihar"],["Hőhullámok → egészségügyi kockázat, új kórokozók megjelenése","hohull|egeszseg|korokoz"],["Elsivatagosodás, élőhelyek megszűnése, fajok kihalása (jegesmedve)","elsivatag|elohely|kihal|jegesmedve"]]],
+[5,"Foglalja össze a savas eső kialakulását és az általa okozott problémákat!",4,0,[["Fosszilis égetésből SO₂ és NOx kerül a légkörbe; vízgőzzel kénsav és salétromsav lesz (pH akár 2,4; természetes eső pH 5–6,5)","so2|nox|kensav|saletrom|ph"],["Folyók, tavak savasodnak; pH 5,5 alatt a halak elpusztulnak","hal|to|foly|vizek"],["Talajsavanyodás: Ca, Mg kioldódik → csökken a termékenység","talaj|kalcium|magnez|termekeny"],["Mérgező alumínium oldódik ki, felhalmozódik a táplálékláncban","alumin|taplalek"],["Erdőpusztulás, épületek, műemlékek korróziója","erdo|korroz|epulet|muemlek"]],"A dián két kérdés is van a savas esőről (4. és 5.), a kettő együtt ezt a tudást kéri."],
+[5,"Ismertesse a savas esők hatását (közvetlen, közvetett) és a védekezés lehetőségeit!",4,0,[["Közvetlen: erdők és szántóföldek savasodása","erdo|szanto|kozvetlen"],["Közvetlen: édesvizek savasodása","edesviz|vizek"],["Közvetett: növénypusztulás, embert érintő hatások","novenypusz|ember|kozvetett"],["Közvetett: fémek, építmények, műemlékek korróziója (MO-n ~20 mrd Ft/év kár)","korroz|muemlek|epitmeny|femek"],["Védekezés: olaj, szén kéntartalmának csökkentése, meszezés, savtűrő növények, védőbevonat","kentartalom|kentartalm|meszez|savturo|vedoborit|vedekez"]]],
+[5,"Melyek a Londoni szmog jellemzői és hatásai?",4,0,[["Télen, alacsony hőmérséklet (−3…+5 °C)","tel|hideg|alacsony homer"],["Magas páratartalom (>80%), magas légnyomás, szélcsend (anticiklon)","para|legnyomas|szelcsend|anticikl"],["Szén elégetése: korom, por és SO₂ → redukáló jellegű füstköd","szen|korom|so2|redukal"],["1952 decemberében több mint 4000 halott; légúti megbetegedések","1952|4000|halt|legut"]]],
+[5,"Melyek a Los Angeles-i szmog jellemzői és hatásai?",4,0,[["Nyáron, erős napsütés, 25–35 °C, szélcsend","nyar|napsut|meleg|25"],["NOx + szénhidrogének (közlekedés) fotokémiai reakciójából talajközeli ózon → oxidáló szmog","nox|szenhidrog|fotokem|ozon|oxidal"],["Irritálja a szemet, orrot, torkot; légutak, tüdőhólyagocskák gyulladása, köhögés","szem|orr|torok|legut|tudo|kohog"],["Asztmásokra, betegekre, csecsemőkre és a növényzetre különösen veszélyes","asztm|csecsemo|gyerek|noveny"]]],
+[5,"Ismertesse az ózonréteg feladatát! Milyen anyagok okozzák a károsodását?",3,0,[["A sztratoszférában (10–50 km) elnyeli a Nap veszélyes UV-sugárzását (UV-C teljesen, UV-B nagy részét)","uv|ultraibolya|sugarz"],["Freonok (CFC) és halonok – klór, bróm","freon|cfc|halon|klor|brom"],["Nitrogén-monoxid (pl. műtrágyázásból)","nitrogen|no\\b|mutragy"],["Montreali egyezmény (1987) korlátozta a kibocsátást","montreal|1987"]]],
+
+[6,"Mutassa be a víz körforgását és annak elemeit!",4,0,[["Motorja a napsugárzás és a gravitáció","napsugar|gravit"],["Párolgás (óceánok felszínéről)","parolg"],["Kicsapódás (kondenzáció), csapadékképződés","kicsapod|kondenz|csapadek"],["Beszivárgás, lefolyás a szárazföldön","beszivarg|lefoly|foly"],["3 fő út: óceán–légkör–óceán; óceán–légkör–szárazföld–óceán; szárazföld–légkör–szárazföld","ocean|szarazfold"]]],
+[6,"Mutassa be a természetes vizek előfordulási típusait, osztályozását!",4,0,[["Légköri vizek (csapadék, pára)","legkori|csapadek"],["Felszíni vizek: vízfolyások (patak, folyó, folyam), tengerek, óceánok","felszini|patak|folyo|tenger"],["Állóvizek: tó, fertő, mocsár, láp","allovi|to\\b|tó|ferto|mocsar|lap"],["Felszín alatti vizek: parti szűrésű, talajvíz, rétegvíz, karsztvíz","felszin alatti|talajviz|retegviz|karszt"]]],
+[6,"Sorolja fel a felszín alatti vizek típusait!",4,0,[["Parti szűrésű víz","parti"],["Talajnedvesség","talajnedv"],["Talajvíz","talajviz"],["Rétegvíz (nem karsztos kőzetek hasadékvize)","retegviz|hasadek"],["Karsztvíz","karszt"]]],
+[6,"Miért soroljuk Magyarországot a vízhiányos országok közé?",3,0,[["Vízhiányos az az ország, ahol az évente megújuló saját vízkészlet < 1000 m³/fő","1000"],["Tranzitország: felszíni vizeink ~95–96%-a külföldről érkezik","tranzit|96|95|kulfold"],["Csak 3 folyó (Zala, Kapos, Zagyva) vízgyűjtője van teljesen az országban","zala|kapos|zagyva"],["A minőség is a felvízi országoktól függ (szennyezetten érkezik)","szennyez|minoseg"]]],
+[6,"Soroljon fel három (a minta ZH-ban négy) környezetvédelmi problémát a vízhasználat kapcsán!",4,1,[["Mezőgazdaság: rossz öntözés → szikesedés, mocsarasodás","szikes|mocsar|ontoz"],["Felszín alatti vízkészlet túlhasználata (nem megújuló), talajvízszint süllyed","felszin alatti|nem megujulo|talajviz"],["Túlzott vízkivétel → csökken a folyók vízhozama","vizhozam|foly"],["Ipar: mennyiségben nem, de minőségben (szennyezés) jelentős","ipar|minoseg"],["Kommunális: ivóvíz minőségű víz WC-öblítésre, autómosásra, kertöntözésre, pazarlás","wc|ivoviz|pazarl|autom|kert"],["Nem valós vízárak","vizar"]],"A minta ZH négyet kért."],
+
+[7,"Mi jellemzi Magyarországon a rétegvizeket?",3,0,[["A felszín alatti vízkivétel kb. 48%-a rétegvízből származik","48"],["Sok esetben ivásra alkalmatlan: metán-, vas-, mangán-, arzéntartalom","metan|vas|mangan|arzen|alkalmatlan"],["A túlzott vízkivétel rontja a minőségét","kivetel|ront"]]],
+[7,"Soroljon fel három mikroszennyezőt a vízszennyezés kapcsán, és ismertesse hatásukat az emberi szervezetre!",4,0,[["Higany (Hg): idegrendszer- és vesekárosító","higany|hg"],["Kadmium (Cd): vese- és csontkárosodás","kadmium|cd"],["Ólom (Pb): idegrendszer, vérképzés, gyermekek fejlődése","olom|pb"],["Szerves: kőolaj, detergensek, peszticidek, fenol","olaj|detergens|peszticid|fenol"],["Közös: kis mennyiségben is mérgezők, rákkeltők, a szervezetben felhalmozódnak, íz- és szagrontók","mergez|rakkelt|felhalmoz|akkumul|iz|szag"]],"A dia a mikroszennyezőket sorolja (Fe, Mn, Zn, Hg, Cd, Pb; kőolaj, detergens, peszticid, fenol) és közös hatásukat; az egyes fémek konkrét hatása tankönyvi kiegészítés."],
+[7,"Írja le röviden, mit tud a vizek hőszennyezéséről?",3,0,[["A víz hőmérsékletének mesterséges megváltoztatása (pl. erőművek hűtővize)","homersekl|hutoviz|eromu|mesterseg"],["Az O₂ oldhatósága a hőmérséklettel fordítottan arányos → csökken az oldott oxigén","oxigen|o2|oldhat"],["Megzavarja az életfolyamatokat, nehezíti a biológiai lebomlást, élőlények eltűnhetnek","eletfolyamat|lebomlas|elolen|elovilag"],["Kevésbé látványos, de a legkritikusabb vízszennyező hatás; szabály: max. 11 °C különbség, 500 m-nél ≤ 30 °C","kritikus|11|30"]]],
+[7,"Írjon három példát, ami oxigénhiányt okoz a felszíni vizekben!",3,0,[["Nyáron elburjánzott vízinövényzet, nagyfokú bomlás/rothadás","burjan|noveny|rothad|bomlas"],["Télen a jégréteg megakadályozza az oxigén bejutását","jeg"],["Szerves és szervetlen szennyezőanyagok vízbe jutása","szerves|szennyez"],["Kedvezőtlen hidrometeorológiai helyzet","hidrometeor|idojaras"],["Hőszennyezés (meleg víz kevesebb O₂-t old)","hoszennyez|meleg"]]],
+[7,"Ismertesse az eutrofizáció fogalmát és tárgykörét!",4,0,[["A vizek növényi tápanyagdúsulása (N, P) által kiváltott biológiai reakció","tapanyag|nitrogen|foszfor|\\bn\\b|\\bp\\b"],["Elnövényesedés: algásodás, hínárosodás","alga|hinar|elnoveny"],["Tavi elöregedés, feltöltődés: tó → fertő → mocsár → láp","feltolt|eloreged|ferto|mocsar|lap"],["Okai: műtrágya bemosódása (erózió, defláció), szennyvizek; természetes és mesterséges is lehet (pl. Balaton)","mutragy|szennyviz|erozi|balaton"]]],
+[7,"Mi a lakosegyenérték, és mire használjuk?",3,0,[["Egy lakos által naponta a csatornába bocsátott szennyvíz szervesanyag-tartalma","lakos|szerves"],["BOI₅ = 60 g / lakos / nap","60"],["A szennyvízkezelő berendezések méretezésére használjuk","mereteze|szennyvizkezel|szennyviztisz"]]],
+[7,"Sorolja fel a szennyvíztisztítás lépéseit!",4,0,[["Mechanikai tisztítás (rács, homokfogó, ülepítő)","mechanik"],["Biológiai tisztítás (mikroorganizmusok)","biologi"],["Kémiai tisztítás (harmadik fokozat: P-kicsapás, ioncsere)","kemiai"],["Fertőtlenítés (klórozás, ózon, UV)","fertotlen|kloroz|uv"],["Iszapkezelés","iszap"]]],
+[7,"Mi a mechanikai szennyvíztisztítás lényege?",3,0,[["A durva (lebegő, ülepedő) szennyezések eltávolítása","durva"],["Rács (uszadék), homokfogó, ülepítő medence","racs|homokfog|ulepit"],["Kiegészítő lépések: flokkulálás, derítés, flotáció","flokkul|derit|flotac"]]],
+[7,"Mi a flokkulálás (célja) és hol alkalmazzuk?",2,1,[["Az ülepítés elősegítése: a kisebb (lebegő, kolloid) szemcséket pelyhekké tapasztja össze","osszetapaszt|tapaszt|pehely|ulepit"],["A (kommunális) szennyvíztisztítás mechanikai fokozatában (és ivóvízkezelésben)","szennyviz|mechanik|ivoviz"]]],
+[7,"Mi a derítés és hol alkalmazzuk?",2,0,[["Oldott állapotú anyagokból (vegyszerrel) csapadékot képeznek, ami kiülepíthető","oldott|csapadek"],["Szennyvíztisztításban (mechanikai/kémiai fokozat), pl. foszfor-eltávolítás","szennyviz|foszfor|mechanik|kemiai"]]],
+[7,"Mi a flotáció és hol alkalmazzuk?",2,0,[["A vizet átbuborékoltatják, az olaj- és zsírcseppek felúsznak és lefölözhetők","bubor|olaj|zsir|lefoloz|feluszn"],["Szennyvíztisztítás mechanikai fokozatában, pl. olajos, zsíros szennyvizeknél","szennyviz|mechanik"]]],
+[7,"Ismertesse a biológiai szennyvíztisztítás célját, írjon rá példát is!",3,0,[["Cél: a szervesanyag-eltávolítás és a nitrifikáció (N → nitrit → nitrát)","szerves|nitrif"],["Mikroorganizmusok (baktériumok) végzik","mikroorg|bakter"],["Példa: csepegtetőtestes (mesterséges) vagy gyökérteres/nádas (természetközeli) eljárás","csepegt|gyokerter|nad|eleveniszap"]]],
+[7,"Ismertesse a BOI fogalmát!",2,0,[["Biológiai (biokémiai) oxigénigény","biologiai oxigen|biokemiai oxigen|oxigenigeny"],["A vízben lévő szerves anyagok baktériumok általi lebontásához szükséges oxigén adott idő (pl. 5 nap) és hőmérséklet alatt","lebont|bakter|szerves"]]],
+[7,"Mi történik a szennyvíztelepeken keletkező szennyvíziszappal?",3,0,[["Mezőgazdasági hasznosítás trágyaként (engedéllyel)","mezogazd|tragya"],["Biogáz előállítása (rothasztás) → energia","biogaz|rothaszt|energia"],["Égetés / tüzelőanyag","eget|tuzelo"],["Rekultiváció, talajjavítás","rekultiv|talajjav"],["Víztelenítés, szárítás; hulladéklerakóra helyezés (kevésbé előnyös)","viztelen|szarit|lerako"]]],
+
+[8,"Ismertesse a talaj fogalmát földtani szempontból!",2,0,[["A földkéreg legfelső, mállási övezete","foldker|malas|mallasi|legfelso"],["A növények élőhelye, meghatározza a rajta termesztett növények (élelmiszerek) minőségét","noveny|elohely|elethely"]]],
+[8,"Ismertessen a talaj globális funkciói közül négyet!",4,0,[["Energiaátalakítás növények nélkül (fény → hő, kémiai energia)","energia"],["Energiaátalakítás növényzettel (fotoszintézis)","fotoszint"],["Klíma- és eróziószabályozás","klima|erozi"],["Anyagmegkötés és -raktározás (szűrő, puffer, kiegyenlítő hatás)","anyagmeg|raktaroz|szuro|puffer"],["Esztétikai szerep, létesítmények környezete","esztetik|letesitm"],["Élelmiszertermelés, élőlények élettere, biodiverzitás","elelmiszer|eletter|biodiverz"]]],
+[8,"Milyen tényezők befolyásolják a talaj vízgazdálkodását?",4,0,[["Meteorológia (csapadék, hőmérséklet, szél)","meteor|csapadek|homers|szel"],["Domborzat (geomorfológia), geológia","domborzat|geomorf|geolog"],["Hidrológia (talajvízszint)","hidrolog|talajviz"],["Talajtulajdonságok","talajtul|tulajdons"],["Emberi beavatkozás (agrotechnika, öntözés)","emberi|agrotech|ontoz"]]],
+[8,"Ismertesse az erózió fogalmát!",2,0,[["Talajpusztulás, a talaj elhordása víz vagy szél által (latin erodare = kirágni)","talajpusztul|elhord|kirag|erodare"],["Természetes (lassú, egyensúlyi) és emberi tevékenység okozta, gyorsított (antropogén) formája van","termeszetes|antropogen|emberi|gyorsit"]]],
+[8,"Mitől függ az erózió?",4,0,[["A talaj ellenálló-képessége","ellenall"],["Csapadékviszonyok (mennyiség, intenzitás, cseppenergia)","csapadek"],["A lejtők meredeksége és hossza","lejto|meredek"],["Növényborítottság mértéke","novenybor|novenyzet|boritott"],["A talaj szerkezete","szerkezet"],["A talaj vízgazdálkodása, nedvességi állapota","vizgazd|nedves"]]],
+[8,"Ismertesse a defláció fogalmát!",2,0,[["Szélerózió: a szél talajpusztító tevékenysége","szel"],["A talajt és a növényeket is pusztítja (homokverés, kifúvás); főleg tavasszal, növénytakaró hiányában","homokver|kifuv|tavasz|noveny"]]],
+[8,"Mitől függ a defláció?",3,0,[["Szélsebesség és a szél ráfutási hossza","szelsebes|rafutas"],["A talaj szemcsemérete, szerkezete (porosodás növeli)","szemcse|szerkezet|poros|homok"],["A talaj nedvessége","nedves"],["Növényborítottság (tavasszal nincs takarás); védő fasorok, erdősávok","noveny|takar|fasor|erdosav"]],"A dián főleg a védekezés szerepel (szélsebesség, ráfutási hossz, fásítás); a többi tényező tankönyvi kiegészítés."],
+[8,"Melyek a vízeróziót kiváltó természetes tényezők?",4,1,[["Heves eső, hirtelen hóolvadás","heves|eso|hoolvad|csapadek"],["Lejtő tulajdonságai (meredekség, hossz, alak, kitettség)","lejto|meredek"],["A talajfelszín növénnyel való fedettsége","noveny|fedett"],["A talaj víznyelő-vízáteresztő képessége","viznyel|vizatereszt|atereszt"],["A talaj aktuális nedvességi állapota","nedves"]]],
+[8,"Melyek a vízeróziót kiváltó mesterséges tényezők?",3,0,[["Okszerűtlen területhasználat (pl. erdőirtás)","teruleth|erdoirt"],["Nem megfelelő művelési ág","muvelesi ag"],["Túl nagy táblaméret","tabla"],["Nem megfelelő agrotechnika (pl. lejtőirányú művelés)","agrotech|lejtoiran|muveles"]]],
+[8,"Írjon két példát az erózió csökkentésére!",2,0,[["Mezővédő erdősávok, fasorok, ligetek; fásítás, füvesítés","erdosav|fasor|fasit|fuves"],["Műszaki: teraszok, sáncok, övárkok","terasz|sanc|ovarok"],["Agronómiai: lejtőre merőleges táblásítás/művelés, művelési ág váltása, növényborítottság biztosítása","meroleges|tablasit|novenybor|muvelesi ag"]]],
+[8,"Ismertesse a talajszennyezés forrásait! Írjon rá példát is!",4,0,[["Lakossági (csatornázatlan derítők, házi szennyvíz)","lakossag|derito|szennyviz"],["Ipari (nehézfémek, toxikus szerves vegyületek)","ipari|nehezfem"],["Közlekedési (kipufogógáz, utakról lemosódó anyagok)","kozleked|kipufog|ut"],["Mezőgazdasági (növényvédő szerek, műtrágya, hígtrágya)","mezogazd|vegyszer|mutragy|novenyved|hig"],["Hulladéklerakás (illegális lerakók), katonai területek","hulladek|lerako|katonai|haboru"]]],
+[8,"Ismertesse a talajszennyezés kárelhárításának alapelveit!",3,0,[["100%-os hatékonyság nincs","100"],["A szennyezett talaj helyszínen hagyása a használat korlátozásával","helyszin|korlatoz"],["Lefedés, „bedobozolás” vízzáró módon","bedoboz|lefed|vizzaro"],["Kiemelés és lerakóba szállítás (ártalmatlanítás átrakással)","kiemel|lerako|atrakas"],["Megtisztítás in-situ vagy off-site technológiával; reprezentatív mintavétel az igazoláshoz","in-situ|in situ|off-site|off site|mintavet"]]],
+[8,"Soroljon fel három talajszennyezési kárelhárítási módszert!",3,0,[["In-situ: talaj-/talajvíz-átlevegőztetés","atlevegoz"],["In-situ/on-site: talajmosás","talajmos"],["Biológiai lebontás (mikroorganizmusokkal)","biologiai|mikroorg"],["Szilárdítás és stabilizálás, kapszulázás","szilardit|stabiliz|kapszul"],["On-site termikus eljárás (égetés, hőbontás)","termikus|eget|hobont"],["Bedobozolás; ártalmatlanítás átrakással","bedoboz|atrakas"]]],
+
+[9,"Soroljon fel négy fontosabb problémát a hulladék keletkezése szempontjából!",4,0,[["Pazarló fogyasztás: fogynak a nem megújuló erőforrások, értékes anyag és energia vész el","pazarl|eroforras|ertekes"],["Környezeti kockázat: ellenőrizetlenül a környezetbe kerül, szennyez, mérgez","kockazat|ellenorizetlen|mergez"],["Egyre több a veszélyes, nem lebomló, felhalmozódó komponens","veszelyes|nem lebomlo|akkumul"],["A lerakók közegészségügyi kockázata (guberálás)","kozegeszseg|guber|lerako"],["Egyre kevesebb hely, drágább elhelyezés és szállítás","hely|draga|koltseg"],["Veszélyes hulladék drága megsemmisítése → hulladékexport fejletlen országokba","export|kereskedel|fejletlen"]]],
+[9,"Ismertesse a hulladékok eredet szerinti csoportosítását!",3,0,[["Települési (kommunális) hulladék","telepulesi|kommunal"],["…szilárd (háztartási, közterületi, intézményi) és folyékony","szilard|folyekony|haztartas"],["Termelési hulladék","termelesi"],["…ipari, mezőgazdasági, közlekedési; technológiai és amortizációs","ipari|mezogazd|technolog|amortiz"]]],
+[9,"Soroljon fel a hulladékok környezeti hatásai közül négyet!",4,1,[["Talaj, talajvíz és felszíni vizek szennyezése (vízbázisok veszélyeztetése)","talaj|viz"],["Levegőszennyezés (bűzös gázok, por, CH₄, CO₂, égetés égéstermékei)","levego|buz|gaz|metan|por"],["Fertőzésveszély (kórokozók)","fertoz|korokoz"],["Rovarok és rágcsálók elszaporodása","rovar|ragcsal|patkany"],["Esztétikai kár (tájkép rombolása)","esztetik|taj"]]],
+[9,"Soroljon fel négy részfolyamatot a hulladék környezetbe jutásának lehetséges útjaiból!",4,0,[["Csurgalékvíz beszivárgása a talajba, talajvízbe","csurgalek|beszivarg|talajviz"],["Csapadékvíz általi felszíni lemosódás → felszíni vizek","lemos|felszini viz|csapadek"],["Gázok (biogáz, bűz) kijutása a légkörbe","gaz|legkor|buz"],["Szél általi porszóródás, kihordás","szel|por"],["Égetés égéstermékei (füst, pernye)","eget|fust|pernye"],["Állatok általi széthordás, táplálékláncba kerülés","allat|taplalek|szethord"]],IMG],
+[9,"Soroljon fel öt hulladékgazdálkodási alapelvet!",5,0,[["Megelőzés elve","megelozes"],["Elővigyázatosság elve","elovigyaz"],["Gyártói felelősség elve","gyartoi"],["Megosztott felelősség elve","megosztott"],["Szennyező fizet elve","szennyezo fizet"],["Elvárható felelős gondosság elve","gondossag"],["Elérhető legjobb eljárás elve","legjobb"],["Közelség, regionalitás, önellátás elve","kozelseg|regional|onellat"],["Fokozatosság, példamutatás, költséghatékonyság elve","fokozatos|peldamut|koltseghat"]]],
+
+[10,"Soroljon fel két módszert, melyekkel a hulladék keletkezése megelőzhető!",2,0,[["Hulladékszegény, anyag- és energiatakarékos technológiák","hulladekszeg|takarekos techn|technolog"],["Betétdíjas csomagolás","betetdij"],["Hosszú élettartamú, javítható, kisebb tömegű termékek","hosszu elet|javithato|kisebb tomeg|tartos"],["Takarékos termékhasználat, fogyasztás csökkentése, termékhelyettesítés","fogyasztas csokk|takarekos|helyettesit"],["Környezetterhelő termékek adóztatása (pl. ír szatyoradó)","ado"]]],
+[10,"Milyen hulladékhasznosítási lehetőségeket ismer?",4,0,[["Újrahasználat (pl. visszaváltható üveg)","ujrahasznal"],["Újrafeldolgozás / újrahasznosítás (anyagában)","ujrafeldolg|ujrahasznosit|recycl"],["Visszanyerés","visszanyer"],["Energetikai hasznosítás (égetés energia-visszanyeréssel)","energetik|eget"],["Komposztálás","komposzt"],["Biogáz-előállítás","biogaz"]]],
+[10,"Mi a funkciója a hulladékgyűjtő szigeteknek?",2,0,[["A lakosság által odahordott hulladékfajták elkülönített, akadálytalan, folyamatos gyűjtésének biztosítása","elkulonit|szelektiv|gyujt"],["Az elkülönítve gyűjtött hulladék közegészségügyileg és környezetvédelmileg kifogástalan, rövid idejű átmeneti tárolása","tarol|atmeneti"]]],
+[10,"Milyen anyagok/hulladékok gyűjthetők a hulladékgyűjtő szigeteken?",4,0,[["Papír","papir"],["Műanyag palack, fólia","muanyag|palack|folia"],["Színes és fehér üveg","uveg"],["Fém italosdoboz","fem|doboz"],["Csak másodnyersanyagként hasznosítható anyag; NEM: veszélyes, bomló szerves, nagydarabos","masodnyers|veszelyes|nagydarab"]]],
+[10,"Írjon három különbséget a reaktív és a preventív környezetvédelem között!",3,0,[["Reaktív: utólag, a már keletkezett szennyezést kezeli („csővégi” megoldás); preventív: megelőz, a forrásnál avatkozik be","utolag|csoveg|forrasnal|megelo|keletkez"],["Reaktív: a szennyezést gyakran csak áthelyezi egyik közegből a másikba; preventív: az összes szennyezést csökkenti","athelyez|osszes|kozeg"],["Reaktív: folyamatos, magas költség; preventív: anyag- és energiamegtakarítás, hosszú távon olcsóbb","koltseg|olcso|megtakarit|draga"],["Preventív pl. tisztább termelés, ökodizájn; reaktív pl. szűrők, szennyvíztisztítás, kármentesítés","tisztabb|okodizajn|szuro|karmentes"]],"Ennek a dián nincs kiolvasható szövege; tankönyvi válasz (a tisztább termelés diáira épül)."],
+[10,"Ismertesse a hulladékgazdálkodás prioritási sorrendjét (hulladékpiramis)!",5,0,[["1. Hulladékképződés megelőzése","megeloz"],["2. Hulladékcsökkentés","csokkent"],["3. Újrahasználat","ujrahasznal"],["4. Anyag-újrafeldolgozás (újrahasznosítás)","ujrafeldolg|ujrahasznosit|recycl"],["5. Energiavisszanyeréssel járó égetés","energiavissz|energetik"],["6. Égetés energiavisszanyerés nélkül","nelkul"],["7. Lerakás (legkevésbé kívánatos)","lerak"]]],
+[10,"Ismertesse a tisztább termelés fontosabb jellemzőit!",3,0,[["Preventív hulladékmegelőzési és -csökkentési stratégia","prevent|megelo"],["„Hol és miért keletkezik a szennyezés?” – az okot kutatja, a forrásnál avatkozik be","hol es miert|forras|ok"],["Azonos termékmennyiség kisebb anyag- és energiafelhasználással","anyag|energia"],["Az összes szennyezés csökkentése a cél, nem az áthelyezése","osszes|athelyez"]]],
+[10,"Ismertesse a tisztább termelés gyakorlati megvalósításait!",4,0,[["Változtatás a terméken (anyagtakarékos tervezés, egynemű, természetes alapanyag)","termek"],["Gondosabb bánásmód (motiválás, munkaszervezés, takarékosság)","gondos|munkaszerv|motival"],["Alap- és segédanyagok kiváltása (lebomló, környezetkímélő)","alapanyag|segedanyag|kivalt"],["Technológiai változtatás (anyag- és energiatakarékos)","technolog"],["Belső visszaforgatás, külső recycling","visszaforg|recycl|belso|kulso"],["Visszaforgatás biogén körfolyamatokba (komposztálás); ártalmatlanítás","biogen|komposzt|artalmatlan"]]],
+[10,"Mi az életciklus-elemzés lényege?",3,0,[["Egy termék vagy folyamat környezeti terheinek értékelése (LCA)","kornyezeti ter|ertekel|lca"],["„Bölcsőtől a sírig”: a teljes életúton","bolcso|sirig|eletut|teljes"],["Lépések: nyersanyag-kitermelés, gyártás, szállítás, használat, újrahasznosítás, hulladék-elhelyezés","nyersanyag|gyartas|szallit|hasznalat"]]],
+[10,"Ismertesse a komposztálás lényegét!",3,0,[["Biológiailag lebomló szerves (kommunális, élelmiszeripari, mezőgazdasági) hulladék feldolgozása","szerves|lebomlo"],["Aerob körülmények (oxigén), mikroorganizmusok, hőfejlődés","aerob|oxigen|mikroorg|ho"],["Nem tartalmazhat mérgező, nem lebomló anyagot","mergezo|nem lebomlo"],["Végtermék: komposzt (40–50% nedvesség) → talaj termőképességének javítása","talaj|termokep|komposzt"]]],
+[10,"Ismertesse a biogáz-hasznosítás lényegét!",3,0,[["Szennyvíziszap, hígtrágya, mezőgazdasági hulladék feldolgozása","iszap|higtragya|mezogazd"],["Anaerob (oxigénmentes) lebontás 30–60 °C-on","anaerob|oxigenmentes|oxigenhiany"],["Termék: metán + CO₂ → energetikai hasznosítás (20–30 MJ/m³)","metan|energ"],["Maradék: kirothasztott iszap szerves trágyaként","tragya|rothaszt"]]],
+[10,"Soroljon fel a hulladéklerakás szempontjából öt tiltott területet!",5,0,[["Erózió- és felszínmozgás-veszélyes terület","erozi|felszinmozg|mozgas"],["Karsztos terület","karszt"],["Jelenlegi vagy potenciális vízbázis","vizbazis"],["Gyógyvíz-termelő kút, gyógyforrás védőterülete","gyogy"],["Ár- és belvízveszélyes terület","arviz|belviz"],["Magas talajvízállású terület","talajviz"],["Természet- és tájvédelmi terület","termeszetved|tajved|vedett"],["Kiemelten védett levegőtisztaságú terület","levego"],["Energiaszállító vezeték védősávja","vezetek"],["Működő bánya, ill. felhagyott bánya mozgásveszéllyel","banya"]]]
+];
+const MINTA=[3,21,25,28,32,45,54,67,75]; // indexek: a Minta ZH 9 kérdése sorrendben
+const LEVELS=[[0,"Csíra"],[120,"Hajtás"],[300,"Facsemete"],[600,"Fa"],[1000,"Liget"],[1500,"Erdő"],[2200,"Ökoszisztéma"],[3000,"Bioszféra"]];
+const ZH_DATE=new Date("2026-11-26T12:10:00+01:00");
+const BADGES=[["elso","Első válasz"],["telitalalat","Első 4/4"],["combo5","Combo ×5"],["tema","Egy téma minden kérdése megvan"],["fel","A kérdések fele megvan"],["mind","Mind a "+Q.length+" kérdés megvan"],["minta","Minta ZH lefutva"],["jeles","Jeles ZH-próba (31+)"],["villam","Villámkör: 12+ tudtam"]];
+
+/* ---------- State ---------- */
+const KEY="kv-zh-gyakorlo-v1";
+let S={xp:0,combo:0,m:{},badges:[],days:[],bestFlash:0};
+try{const r=localStorage.getItem(KEY); if(r) S=Object.assign(S,JSON.parse(r));}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const norm=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/₂/g,"2").replace(/₄/g,"4").replace(/₅/g,"5").replace(/³/g,"3");
+const $=s=>document.querySelector(s);
+const app=$("#app");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const today=()=>new Date().toISOString().slice(0,10);
+
+function lvl(){let i=0;LEVELS.forEach((l,k)=>{if(S.xp>=l[0])i=k});const cur=LEVELS[i],nx=LEVELS[i+1];return{name:cur[1],pct:nx?(S.xp-cur[0])/(nx[0]-cur[0])*100:100}}
+function streak(){const d=[...new Set(S.days)].sort();let n=0;let t=new Date(today());while(d.includes(t.toISOString().slice(0,10))){n++;t.setDate(t.getDate()-1)}return n}
+function hud(){const L=lvl();$("#lvlName").textContent=L.name;$("#xpFill").style.width=L.pct+"%";$("#xp").textContent=S.xp;$("#combo").textContent="×"+S.combo;$("#streak").textContent=streak()}
+function mastery(i){return S.m[i]||{s:0,n:0,b:0}}
+function predicted(){let t=0;Q.forEach((_,i)=>t+=mastery(i).s);return t/Q.length*9}
+function grade(p){return p>=31?5:p>=26?4:p>=22?3:p>=18?2:1}
+const GNAME={5:"jeles",4:"jó",3:"közepes",2:"elégséges",1:"elégtelen"};
+function award(id){if(!S.badges.includes(id)){S.badges.push(id);save();fx(40)}}
+function checkBadges(){
+  const seen=Object.keys(S.m).length;
+  if(seen>=1)award("elso");
+  if(seen>=Q.length/2)award("fel");
+  if(seen>=Q.length)award("mind");
+  if(TOPICS.some((_,t)=>Q.every((q,i)=>q[0]!==t||S.m[i])))award("tema");
+}
+
+/* ---------- Scoring ---------- */
+function autoHits(i,text){const t=norm(text);return Q[i][4].map(p=>t.trim().length>0&&new RegExp(p[1]).test(t))}
+function scoreOf(i,checks){const hits=checks.filter(Boolean).length;return Math.min(4,Math.round(4*hits/Q[i][2]))}
+function commit(i,sc,mult=true){
+  const m=mastery(i);m.n++;m.s=sc;m.b=sc===4?Math.min(3,m.b+1):sc>=2?m.b:0;S.m[i]=m;
+  if(sc===4){S.combo++;award("telitalalat")}else S.combo=0;
+  if(S.combo>=5)award("combo5");
+  const gain=Math.round(sc*10*(mult?1+0.25*Math.min(S.combo,4):1));
+  S.xp+=gain;if(!S.days.includes(today()))S.days.push(today());
+  checkBadges();save();hud();return gain;
+}
+
+/* ---------- Views ---------- */
+function home(){
+  stopTimer();
+  const ms=ZH_DATE-new Date();const days=Math.max(0,Math.floor(ms/864e5)),hrs=Math.max(0,Math.floor(ms%864e5/36e5));
+  const p=predicted();const g=grade(p);
+  app.innerHTML=`
+  <section class="hero">
+    <div><h1>Környezetvédelem<br>ZH-gyakorló</h1>
+    <p>Bedő Anett 11 előadásának mind a ${Q.length} ellenőrző kérdése. Írd le a választ, a gép kulcsszavak alapján kiosztja a pontot (0–4), te pedig javíthatsz rajta.</p></div>
+    <div class="count"><small>ZH · nov. 26. 12:10, A2</small><div class="big num">${ms>0?days+"n "+hrs+"ó":"ma!"}</div><small>van hátra</small></div>
+  </section>
+  <section class="meter" aria-label="Becsült ZH-eredmény">
+    <div class="top"><h3>Ötös-mérő: most kb. <span class="num">${p.toFixed(1)}</span> / 36 pont → ${GNAME[g]} (${g})</h3><small class="num">jeleshez 31 pont kell</small></div>
+    <div class="scale"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><i class="pin" style="left:calc(${Math.min(100,p/36*100)}% - 1px)"></i></div>
+    <div class="scalelbl"><span>0</span><span>18</span><span>22</span><span>26</span><span>31</span><span>36</span></div>
+    <p>A becslés minden kérdés utolsó pontszámából számol: 9 kérdés × 4 pont, ahogy a minta ZH-ban. A még nem gyakorolt kérdés 0 pontnak számít.</p>
+  </section>
+  <div class="modes">
+    <button class="mode primary" id="mPractice"><b>Gyakorlás</b><span>A leggyengébb kérdések jönnek előre</span></button>
+    <button class="mode" id="mZh"><b>ZH-próba</b><span>9 véletlen kérdés, 36 pont, jegy a végén</span></button>
+    <button class="mode" id="mMinta"><b>Minta ZH</b><span>A tanárnő mintájának 9 kérdése</span></button>
+    <button class="mode" id="mFlash"><b>Villámkör</b><span>90 mp, tudtam / nem tudtam, combo</span></button>
+  </div>
+  <div class="sect"><h2>Témák</h2><small>koppints egy témára, hogy csak azt gyakorold</small></div>
+  <div class="topics">${TOPICS.map((t,k)=>{const qs=Q.map((q,i)=>[q,i]).filter(x=>x[0][0]===k);const st=qs.reduce((a,x)=>a+mastery(x[1]).b,0),max=qs.length*3;const pts=qs.reduce((a,x)=>a+mastery(x[1]).s,0);
+    return `<div class="topic"><span class="no">${String(k+1).padStart(2,"0")}</span><div class="nm"><button class="btn ghost" data-t="${k}" style="padding:0;border:0;text-align:left;font-weight:600">${esc(t.n)}</button><div class="prog"><i style="width:${st/max*100}%"></i></div></div><div class="st">${pts}/${qs.length*4} p<br><a href="https://szelearning.sze.hu/mod/resource/view.php?id=${t.u}" target="_blank" rel="noopener">dia ↗</a></div></div>`}).join("")}</div>
+  <div class="sect"><h2>Kitűzők</h2><small>${S.badges.length}/${BADGES.length}</small></div>
+  <div class="badges">${BADGES.map(b=>`<span class="bdg ${S.badges.includes(b[0])?"on":""}">${esc(b[1])}</span>`).join("")}</div>
+  <p class="foot">A haladás ebben a böngészőben mentődik. A „dia ↗” linkek a szelearningre visznek, ahhoz be kell lenned jelentkezve. <button class="btn ghost" id="reset" style="padding:2px 8px;font-size:12px">Haladás törlése</button><span id="resetc"></span></p>`;
+  $("#mPractice").onclick=()=>practice(null);
+  $("#mZh").onclick=()=>zh(false);
+  $("#mMinta").onclick=()=>zh(true);
+  $("#mFlash").onclick=flash;
+  app.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>practice(+b.dataset.t));
+  $("#reset").onclick=()=>{$("#resetc").innerHTML=' Biztos? <button class="btn ghost" id="reset2" style="padding:2px 8px;font-size:12px;color:var(--bad)">Igen, törlöm</button>';$("#reset2").onclick=()=>{S={xp:0,combo:0,m:{},badges:[],days:[],bestFlash:0};save();hud();home()}};
+  hud();window.scrollTo(0,0);
+}
+
+function practiceQueue(t){
+  let ids=Q.map((_,i)=>i).filter(i=>t===null||Q[i][0]===t);
+  ids=shuffle(ids).sort((a,b)=>(mastery(a).b-mastery(b).b)||(mastery(a).s-mastery(b).s));
+  return ids;
+}
+function practice(t){
+  const queue=practiceQueue(t);let pos=0,sessionPts=0,done=0;
+  const next=()=>{if(pos>=queue.length){pos=0;queue.splice(0,queue.length,...practiceQueue(t))}
+    card(queue[pos++],{title:t===null?"Gyakorlás · minden téma":"Gyakorlás · "+TOPICS[t].n,progress:null,onDone:(sc)=>{sessionPts+=sc;done++;next()},footer:()=>`${done} kérdés · ${sessionPts} pont ebben a körben`})};
+  next();
+}
+
+let timerId=null;function stopTimer(){if(timerId){clearInterval(timerId);timerId=null}}
+function zh(isMinta){
+  let ids;
+  if(isMinta) ids=MINTA.slice();
+  else{const groups=[[0],[1,2],[3],[4,5],[4,5],[6,7],[7],[8],[9,10]];ids=[];groups.forEach(g=>{const pool=Q.map((_,i)=>i).filter(i=>g.includes(Q[i][0])&&!ids.includes(i));ids.push(shuffle(pool)[0])})}
+  const res=[];let k=0;const t0=Date.now();
+  const step=()=>{if(k>=ids.length)return zhResult(ids,res,isMinta,Date.now()-t0);
+    card(ids[k],{title:(isMinta?"Minta ZH":"ZH-próba")+` · ${k+1}/9. kérdés`,progress:k/9,zh:true,t0,onDone:(sc)=>{res.push(sc);k++;step()},footer:()=>`eddig ${res.reduce((a,b)=>a+b,0)} / ${res.length*4} pont`})};
+  step();
+}
+function zhResult(ids,res,isMinta,ms){
+  stopTimer();
+  const tot=res.reduce((a,b)=>a+b,0),g=grade(tot);
+  if(isMinta)award("minta");if(g===5){award("jeles");fx(160)}
+  S.xp+=tot*3;save();hud();
+  app.innerHTML=`<section class="card res">
+   <div class="cardhead"><span>${isMinta?"Minta ZH":"ZH-próba"} vége</span><span class="num">${Math.round(ms/60000)} perc</span></div>
+   <div class="row" style="align-items:flex-end;gap:22px"><div class="grade">${g}</div><div><h2 class="num">${tot} / 36 pont</h2><div style="color:var(--muted)">${GNAME[g]}${g<5?` · a jeleshez még ${31-tot} pont kellett volna`:" · megvan az ötös!"}</div></div></div>
+   <div class="tw"><table class="restable">${ids.map((i,k)=>`<tr><td>${esc(Q[i][1])}<br><small style="color:var(--muted)">${esc(TOPICS[Q[i][0]].n)}</small></td><td>${res[k]}/4</td></tr>`).join("")}</table></div>
+   <div class="row"><button class="btn go" id="again">Új ZH-próba</button><button class="btn" id="weak">A gyengéket gyakorlom</button><span class="spacer"></span><button class="btn ghost" id="back">Főoldal</button></div>
+   <p class="note">+${tot*3} XP bónusz a ZH-próbáért. Pontozás a tanszéki skálán: 0–17: 1 · 18–21: 2 · 22–25: 3 · 26–30: 4 · 31–36: 5.</p></section>`;
+  $("#again").onclick=()=>zh(false);$("#back").onclick=home;
+  $("#weak").onclick=()=>{const w=ids.filter((i,k)=>res[k]<4);if(!w.length)return practice(null);let p=0;const nx=()=>{if(p>=w.length)return home();card(w[p++],{title:"Gyengék újra",onDone:nx,footer:()=>`${p}/${w.length}`})};nx()};
+  window.scrollTo(0,0);
+}
+
+function card(i,o){
+  const q=Q[i],m=mastery(i);
+  app.innerHTML=`<div class="top-actions"><button class="btn ghost" id="quit">← Főoldal</button><span class="timer num" id="timer"></span></div>
+  ${o.progress!=null?`<div class="prog2"><i style="width:${o.progress*100}%"></i></div>`:""}
+  <section class="card">
+    <div class="cardhead"><span>${esc(o.title)}</span><span>${esc(TOPICS[q[0]].n)} <span class="stars" title="elsajátítás">${"★".repeat(m.b)}${"☆".repeat(3-m.b)}</span></span></div>
+    <div class="q">${esc(q[1])}</div>
+    <div class="need">4 pont · a teljes ponthoz ${q[2]} jó elem kell${q[3]?" · <b>szerepelt a minta ZH-ban</b>":""}</div>
+    <label for="ans" style="font-size:13px;color:var(--muted)">A válaszod (kulcsszavakra pontoz, a sorrend és a helyesírás mindegy)</label>
+    <textarea id="ans" placeholder="pl. litoszféra, hidroszféra, …"></textarea>
+    <div class="row" id="act"><button class="btn go" id="check">Ellenőrzés</button><button class="btn ghost" id="show">Nem tudom, mutasd</button><span class="spacer"></span><small style="color:var(--muted)" id="foot">${o.footer?esc(o.footer()):""}</small></div>
+    <div id="reveal"></div>
+  </section>`;
+  $("#quit").onclick=home;
+  if(o.zh){const tick=()=>{const s=(Date.now()-o.t0)/1000|0;const el=$("#timer");if(el){el.textContent=`${String(s/60|0).padStart(2,"0")}:${String(s%60).padStart(2,"0")} / 45:00`;el.classList.toggle("hot",s>=2400)}};stopTimer();tick();timerId=setInterval(tick,1000)}else stopTimer();
+  const ta=$("#ans");ta.focus({preventScroll:true});
+  ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();reveal()}});
+  const reveal=()=>{
+    const checks=autoHits(i,ta.value);
+    $("#act").remove();ta.readOnly=true;
+    $("#reveal").innerHTML=`<ul class="pts">${q[4].map((p,k)=>`<li><label class="${checks[k]?"hit":""}"><input type="checkbox" data-k="${k}" ${checks[k]?"checked":""}><span>${esc(p[0])}</span></label></li>`).join("")}</ul>
+      ${q[5]?`<p class="note">${esc(q[5])}</p>`:""}
+      <div class="score"><div class="s num" id="sc">0<small>/4</small></div><div class="dots" id="dots">${"<i></i>".repeat(4)}</div><small style="color:var(--muted);flex:1;min-width:180px">A sárgákat a gép találta meg a szövegedben. Pipáld be, amit tudtál, vedd ki, amit mégsem.</small></div>
+      <div class="row"><button class="btn go" id="next">Pont elfogadva, tovább</button><span class="toast" id="toast"></span></div>`;
+    const upd=()=>{const c=[...app.querySelectorAll(".pts input")].map(x=>x.checked);const sc=scoreOf(i,c);$("#sc").innerHTML=sc+"<small>/4</small>";$("#dots").querySelectorAll("i").forEach((d,k)=>d.classList.toggle("on",k<sc));app.querySelectorAll(".pts label").forEach((l,k)=>l.classList.toggle("hit",c[k]));return sc};
+    app.querySelectorAll(".pts input").forEach(x=>x.onchange=upd);upd();
+    $("#next").onclick=()=>{const sc=upd();const gain=commit(i,sc,!o.zh);$("#toast").textContent=`+${gain} XP${S.combo>1?" · combo ×"+S.combo:""}`;if(sc===4)fx(S.combo>=3?60:25);$("#next").disabled=true;setTimeout(()=>o.onDone(sc),sc===4?650:350)};
+    $("#next").focus({preventScroll:true});
+  };
+  $("#check").onclick=reveal;$("#show").onclick=()=>{ta.value="";reveal()};
+  window.scrollTo(0,0);
+}
+
+function flash(){
+  stopTimer();
+  const ids=shuffle(Q.map((_,i)=>i));let p=0,ok=0,combo=0,best=0,left=90,shown=false;
+  app.innerHTML=`<div class="top-actions"><button class="btn ghost" id="quit">← Főoldal</button><span class="timer num" id="ft">90 mp</span></div>
+  <section class="card"><div class="cardhead"><span>Villámkör</span><span class="num" id="fs">0 tudtam · combo ×0</span></div>
+  <div class="q" id="fq"></div><div id="fa"></div>
+  <div class="row" id="fb"></div><p class="note">Gondold végig fejben, nyisd meg a választ, és légy őszinte magaddal. Tudtam = +15 XP × combo.</p></section>`;
+  $("#quit").onclick=()=>{stopTimer();home()};
+  const draw=()=>{shown=false;const q=Q[ids[p%ids.length]];$("#fq").textContent=q[1];$("#fa").innerHTML="";$("#fb").innerHTML=`<button class="btn go" id="fr">Válasz megnézése</button>`;$("#fr").onclick=show;$("#fr").focus({preventScroll:true})};
+  const show=()=>{shown=true;const q=Q[ids[p%ids.length]];$("#fa").innerHTML=`<div class="flash-ans"><ul>${q[4].map(x=>`<li>${esc(x[0])}</li>`).join("")}</ul><small style="color:var(--muted)">${q[2]} elem kell a teljes ponthoz</small></div>`;
+    $("#fb").innerHTML=`<button class="btn go" id="y">Tudtam</button><button class="btn" id="n">Nem tudtam</button>`;
+    $("#y").onclick=()=>{ok++;combo++;best=Math.max(best,combo);S.xp+=Math.round(15*(1+0.2*Math.min(combo,5)));if(!S.days.includes(today()))S.days.push(today());save();hud();if(combo%3===0)fx(20);p++;upd();draw()};
+    $("#n").onclick=()=>{combo=0;p++;upd();draw()}};
+  const upd=()=>{$("#fs").textContent=`${ok} tudtam · combo ×${combo}`};
+  draw();
+  timerId=setInterval(()=>{left--;const el=$("#ft");if(!el)return stopTimer();el.textContent=left+" mp";el.classList.toggle("hot",left<=10);if(left<=0){stopTimer();
+    if(ok>=12)award("villam");S.bestFlash=Math.max(S.bestFlash||0,ok);save();
+    app.innerHTML=`<section class="card res"><div class="cardhead"><span>Villámkör vége</span><span>rekord: <b class="num">${S.bestFlash}</b></span></div><h2 class="num">${ok} tudtam / ${p} kérdés</h2><p style="color:var(--muted)">Leghosszabb combo: ×${best}. Ami nem ment, azt a Gyakorlás módban pontosan is kipróbálhatod.</p><div class="row"><button class="btn go" id="again">Még egy kör</button><span class="spacer"></span><button class="btn ghost" id="back">Főoldal</button></div></section>`;
+    $("#again").onclick=flash;$("#back").onclick=home;if(ok>=10)fx(80)}},1000);
+}
+
+/* ---------- Confetti ---------- */
+const cv=$("#fx"),cx=cv.getContext("2d");let parts=[],raf=0;
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function fx(n){if(reduce)return;cv.width=innerWidth*devicePixelRatio;cv.height=innerHeight*devicePixelRatio;
+  const cs=getComputedStyle(document.documentElement);const cols=["--accent","--sun","--sky","--good"].map(v=>cs.getPropertyValue(v).trim());
+  for(let k=0;k<n;k++)parts.push({x:innerWidth*(.2+.6*Math.random()),y:innerHeight*.35,vx:(Math.random()-.5)*9,vy:-Math.random()*9-3,r:Math.random()*6+3,c:cols[k%4],a:Math.random()*6,l:90});
+  if(!raf)loop()}
+function loop(){cx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);cx.clearRect(0,0,innerWidth,innerHeight);
+  parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.28;p.a+=.2;p.l--;cx.save();cx.translate(p.x,p.y);cx.rotate(p.a);cx.fillStyle=p.c;cx.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);cx.restore()});
+  parts=parts.filter(p=>p.l>0&&p.y<innerHeight+20);raf=parts.length?requestAnimationFrame(loop):0;if(!raf)cx.clearRect(0,0,innerWidth,innerHeight)}
+
+home();
+</script>
