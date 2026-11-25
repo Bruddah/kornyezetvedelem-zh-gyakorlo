@@ -580,16 +580,27 @@ const STG=["Ismerkedés","Melyik tartozik ide?","Hiányzó elem","Felidézés fe
 function learn(sel){
   stopTimer();setKeys(null);
   const all=poolOf(sel);
-  const todo=all.filter(i=>lStage(i)<4).sort((a,b)=>lStage(b)-lStage(a)||a-b);
+  const todo=all.filter(i=>lStage(i)<4);
   if(!todo.length)return learnDone(sel,true);
-  const round=todo.slice(0,7),roundLen=round.length;let queue=shuffle(round),step=0,right=0,total=0;
+  /* Kör: legfeljebb 3 régebben látott, félkész kártya + új kártyák fejezetsorrendben, hogy haladj előre. */
+  S.rn=(S.rn||0)+1;S.Ls=S.Ls||{};
+  const wip=todo.filter(i=>lStage(i)>0).sort((a,b)=>(S.Ls[a]||0)-(S.Ls[b]||0)||lStage(b)-lStage(a));
+  const unseen=todo.filter(i=>lStage(i)===0).sort((a,b)=>a-b);
+  const old=wip.filter(i=>(S.Ls[i]||0)<S.rn-1);
+  let round=[...old.slice(0,3)];
+  for(const i of unseen){if(round.length>=7)break;round.push(i)}
+  for(const i of wip){if(round.length>=7)break;if(!round.includes(i))round.push(i)}
+  round.forEach(i=>S.Ls[i]=S.rn);save();
+  const roundLen=round.length,views={};let queue=shuffle(round),step=0,right=0,total=0;
   const next=()=>{
     setKeys(null);
     if(!queue.length)return roundEnd();
     const i=queue.shift(),q=Q[i],s=lStage(i),pts=q[4].map(p=>p[0]);
     const ladder=`<span class="ladder" title="${s}/4 lépcső">${[0,1,2,3].map(k=>`<i class="${k<s?"on":""}"></i>`).join("")}</span>`;
     const advance=(ok,ns)=>{S.L[i]=ns;total++;if(ok){right++;S.xp+=ns>=4?20:8}touchDay();checkBadges();save();hud();step++;
-      if(ns<4)queue.splice(Math.min(queue.length,2+Math.random()*3|0),0,i);else fx(30)};
+      views[i]=(views[i]||0)+1;
+      /* jó válasz után a körön belül még egyszer-kétszer visszajön; rossz válasz után csak egy későbbi körben */
+      if(ns>=4)fx(30);else if(ok&&views[i]<3)queue.splice(Math.min(queue.length,2+Math.random()*3|0),0,i)};
     const cont=()=>{$("#act").innerHTML=`<button class="btn go" id="nx">Tovább <span class="kbd">↵</span></button>`;$("#nx").focus({preventScroll:true});$("#nx").onclick=next;setKeys(e=>{if(e.key==="Enter"&&!typing(e)){e.preventDefault();next()}})};
     let k=Math.random()*pts.length|0;
     const back=(hl)=>`<div class="bk-h">Válasz · ${q[2]} elem a 4 ponthoz</div><ol class="alist">${pts.map((x,j)=>`<li>${j===hl?`<span class="hit">${esc(x)}</span>`:esc(x)}</li>`).join("")}</ol>${q[5]?`<p class="cnote">${esc(q[5])}</p>`:""}<div id="vd"></div>`;
@@ -620,7 +631,7 @@ function learn(sel){
       setKeys(e=>{const n=+e.key;if(!typing(e)&&n>=1&&n<=opts.length){e.preventDefault();pick(n-1)}});
     }else{
       let shown=false,full=false,msg="";
-      $("#mid").innerHTML=`<textarea id="ans" placeholder="Írd le fejből, amire emlékszel. A „Fejből ment” csak hibátlan válasznál nyomható meg."></textarea>`;
+      $("#mid").innerHTML=`<textarea id="ans" placeholder="Írd le fejből, amire emlékszel. A „Fejből ment” akkor nyomható meg, ha az elemek kb. 70%-a megvan."></textarea>`;
       $("#act").innerHTML=`<button class="btn go" id="sh">Megfordítom</button><span class="small">vagy koppints a kártyára</span>`;
       const resetScene=()=>{const sc=$("#scene");sc.classList.remove("fly");sc.style.transform="";sc.style.setProperty("--yes",0);sc.style.setProperty("--no",0)};
       const c=mountCard({onTap:()=>shown?c.flip():show(),swipe:{enabled:()=>shown&&!$("#nx"),right:()=>{resetScene();if(full)rate(true);else c.shake()},left:()=>{resetScene();rate(false)}}});
@@ -639,8 +650,8 @@ function learn(sel){
       const show=()=>{if(shown)return;shown=true;const t=$("#ans").value;$("#ans").readOnly=true;
         const h=t.trim()?autoHits(i,t):pts.map(()=>false),n=h.filter(Boolean).length;
         app.querySelectorAll(".back .alist li").forEach((li,j)=>{if(h[j])li.innerHTML=`<span class="hit">✓ ${esc(pts[j])}</span>`});
-        full=n>=q[2];
-        msg=!t.trim()?"Nem írtál le semmit, ezért nem jelölheted, hogy fejből ment. Legközelebb írd le a választ.":`A hibátlan válaszhoz ${q[2]} elem kell, a leírt válaszodban ${n} van meg (zölddel pipálva). Ezt még gyakorolni kell.`;
+        const needOk=Math.max(1,Math.round(q[2]*0.7));full=n>=needOk;
+        msg=!t.trim()?"Nem írtál le semmit, ezért nem jelölheted, hogy fejből ment. Egy későbbi körben újra jön.":`Legalább ${needOk} elem kell (kb. 70%), a leírt válaszodban ${n} van meg (zölddel pipálva). Nyomd a „Még nem ment”-et, egy későbbi körben újra jön.`;
         c.flip(true);rateUI()};
       $("#sh").onclick=show;$("#ans").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();show()}});
     }
@@ -652,7 +663,7 @@ function learn(sel){
     fx(35);
     app.innerHTML=`<div class="study"><section class="panel"><div class="small">Kör vége · ${esc(selLabel(sel))}</div>
       <h2 class="num">${right}/${total} jó lépés</h2>
-      <p>Ebben a körben ${fin} kártyát tanultál meg teljesen. Összesen ${st.k}/${st.t} megtanulva.</p>
+      <p>Ebben a körben ${fin} kártyát tanultál meg teljesen. Összesen ${st.k}/${st.t} megtanulva. Ami nem ment, az egy későbbi körben jön vissza, közben haladsz tovább az új kártyákkal.</p>
       <div class="ls"><i class="k" style="width:${st.k/st.t*100}%"></i><i class="w" style="width:${st.w/st.t*100}%"></i></div>
       <div class="llegend"><span>megtanulva <b>${st.k}</b></span><span>folyamatban <b>${st.w}</b></span><span>új <b>${st.n}</b></span></div>
       <div class="row" style="margin-top:18px"><button class="btn go" id="cont">Következő kör <span class="kbd">↵</span></button><span class="spacer"></span><button class="btn ghost" id="back">Főoldal</button></div></section></div>`;
